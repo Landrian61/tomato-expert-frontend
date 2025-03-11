@@ -10,13 +10,13 @@ import { Save } from 'lucide-react';
 const Profile = () => {
   return (
     <Layout title="My Profile & Preferences">
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-4xl mx-auto">
         <ProfileForm />
         <NotificationSettings />
         <AppSettings />
         
         <div className="flex justify-center pt-4 pb-10">
-          <Button size="lg" className="px-8">
+          <Button size="lg" className="px-8 bg-plant hover:bg-plant-dark">
             <Save className="mr-2 h-4 w-4" />
             Save Changes
           </Button>
