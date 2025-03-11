@@ -16,7 +16,7 @@ const MobileNavigation: React.FC = () => {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-10 bg-background border-t">
+    <nav className="fixed bottom-0 left-0 right-0 z-10 bg-sidebar border-t border-sidebar-border">
       <div className="grid grid-cols-5">
         {navigation.map((item) => (
           <Link
@@ -25,8 +25,8 @@ const MobileNavigation: React.FC = () => {
             className={cn(
               "flex flex-col items-center justify-center px-2 py-3 text-xs font-medium",
               location.pathname === item.href
-                ? "text-primary"
-                : "text-muted-foreground"
+                ? "text-sidebar-primary-foreground"
+                : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
             )}
           >
             <item.icon className="h-5 w-5 mb-1" aria-hidden="true" />
