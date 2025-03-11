@@ -1,0 +1,27 @@
+
+{
+  "name": "Tomato Expert",
+  "short_name": "Tomato Expert",
+  "description": "Advanced tomato plant disease detection and management for farmers",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f1faee",
+  "theme_color": "#e63946",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
