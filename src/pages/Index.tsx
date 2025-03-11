@@ -5,22 +5,11 @@ import EnvironmentCard from '@/components/dashboard/EnvironmentCard';
 import RiskGauge from '@/components/dashboard/RiskGauge';
 import TrendChart from '@/components/dashboard/TrendChart';
 import ActionButton from '@/components/dashboard/ActionButton';
-import DynamicTomatoPlant from '@/components/dashboard/DynamicTomatoPlant';
 import { Sprout, AlertTriangle, LineChart } from 'lucide-react';
 import { environmentalData, criValue, criTrendData } from '@/data/mock-data';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Dashboard = () => {
-  // Determine plant health based on CRI value
-  const getPlantHealth = () => {
-    if (criValue < 25) return 'healthy';
-    if (criValue < 50) return 'mild-stress';
-    if (criValue < 75) return 'moderate-stress';
-    return 'severe-stress';
-  };
-
-  const plantHealth = getPlantHealth();
-
   return (
     <Layout title="Field Overview">
       <div className="space-y-6">
@@ -48,22 +37,9 @@ const Dashboard = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <RiskGauge value={criValue} />
-            <TrendChart title="CRI Trend (7 Days)" data={criTrendData} />
-          </div>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-medium">Plant Health Status</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center">
-              <DynamicTomatoPlant healthStatus={plantHealth} className="h-48" />
-              <div className={`mt-4 px-3 py-1 rounded-full text-sm font-medium risk-${plantHealth.split('-')[0]}`}>
-                {plantHealth === 'healthy' ? 'Healthy' : plantHealth.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <RiskGauge value={criValue} />
+          <TrendChart title="CRI Trend (7 Days)" data={criTrendData} />
         </div>
 
         <div>
