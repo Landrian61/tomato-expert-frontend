@@ -2,6 +2,7 @@
 import React from 'react';
 import { render, screen } from '../utils/test-utils';
 import Landing from './Landing';
+import { describe, it, expect } from 'vitest';
 
 describe('Landing Page', () => {
   it('renders main heading and CTA buttons', () => {

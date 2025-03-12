@@ -3,6 +3,7 @@ import React from 'react';
 import { render, screen } from '../../utils/test-utils';
 import ActionButton from './ActionButton';
 import { Sprout } from 'lucide-react';
+import { describe, it, expect } from 'vitest';
 
 describe('ActionButton', () => {
   it('renders correctly with default props', () => {

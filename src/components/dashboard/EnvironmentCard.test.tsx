@@ -2,6 +2,7 @@
 import React from 'react';
 import { render, screen } from '../../utils/test-utils';
 import EnvironmentCard from './EnvironmentCard';
+import { describe, it, expect } from 'vitest';
 
 describe('EnvironmentCard', () => {
   it('renders with temperature icon correctly', () => {

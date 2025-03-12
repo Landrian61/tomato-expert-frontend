@@ -2,6 +2,7 @@
 import React from 'react';
 import { render, screen } from '../../utils/test-utils';
 import AlertCard from './AlertCard';
+import { describe, it, expect } from 'vitest';
 
 describe('AlertCard', () => {
   it('renders alert information correctly', () => {
