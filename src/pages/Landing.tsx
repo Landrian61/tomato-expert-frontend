@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plant, Shield, LineChart, AlertTriangle, ChevronRight } from 'lucide-react';
+import { Sprout, Shield, LineChart, AlertTriangle, ChevronRight } from 'lucide-react';
 
 const Landing = () => {
   return (
@@ -67,7 +66,7 @@ const Landing = () => {
             <Card className="border-plant/10 hover:border-plant/30 transition-colors">
               <CardContent className="pt-6">
                 <div className="rounded-full bg-plant/10 p-3 w-12 h-12 flex items-center justify-center mb-4">
-                  <Plant className="h-6 w-6 text-plant" />
+                  <Sprout className="h-6 w-6 text-plant" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">Disease Detection</h3>
                 <p className="text-muted-foreground">
