@@ -25,7 +25,7 @@ const Register = () => {
     setTimeout(() => {
       setIsLoading(false);
       toast.success("Registration successful! Please check your email to verify your account.");
-      navigate('/login');
+      navigate(`/verify-email?email=${encodeURIComponent(email)}`);
     }, 1500);
   };
 
