@@ -2,11 +2,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowLeft, EyeIcon, EyeOffIcon } from 'lucide-react';
+import axios from 'axios';
 
 const Register = () => {
   const navigate = useNavigate();
@@ -16,17 +17,44 @@ const Register = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate registration process
-    setTimeout(() => {
+
+    try {
+      const response = await axios.post("http://localhost:5000/api/register", {
+        firstName,
+        lastName,
+        email,
+        password
+      });
+
+      // The backend sends a message on success, not a success property
+      if (response.status === 201) {
+        toast.success("Registration successful!");
+        navigate("/login");
+      }
+    } catch (err) {
+      if (axios.isAxiosError(err) && err.response) {
+        // Display the specific error message from the backend
+        const errorMessage = err.response.data.message || "Registration failed. Please try again.";
+        setError(errorMessage);
+        toast.error(errorMessage);
+      } else {
+        const errorMessage = "Registration failed. Please try again.";
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
+    } finally {
       setIsLoading(false);
-      toast.success("Registration successful! Please check your email for verification code.");
-      navigate(`/verify-email?email=${encodeURIComponent(email)}`);
-    }, 1500);
+      setTimeout(() => {
+        toast.success("Registration successful! Please check your email for verification code.");
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+      }, 1500);
+    }
+
   };
 
   return (
@@ -44,12 +72,16 @@ const Register = () => {
                 <span className="text-white font-bold text-lg">TE</span>
               </div>
             </div>
-            <CardTitle className="text-2xl font-bold text-center">Create an Account</CardTitle>
-            <CardDescription className="text-center">
+            <CardDescription>
               Enter your information to create your Tomato Expert account
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {error && (
+              <div className="mb-4 p-2 bg-red-50 text-red-500 rounded border border-red-200 text-sm">
+                {error}
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

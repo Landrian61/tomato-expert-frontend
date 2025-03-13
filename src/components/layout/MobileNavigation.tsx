@@ -5,7 +5,7 @@ import { LayoutDashboard, Sprout, AlertTriangle, LineChart, User } from 'lucide-
 import { cn } from '@/lib/utils';
 
 const navigation = [
-  { name: 'Overview', href: '/', icon: LayoutDashboard },
+  { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Diagnosis', href: '/diagnosis', icon: Sprout },
   { name: 'Alerts', href: '/alerts', icon: AlertTriangle },
   { name: 'Insights', href: '/insights', icon: LineChart },

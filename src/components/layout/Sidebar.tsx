@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
 const navigation = [
-  { name: 'Field Overview', href: '/', icon: LayoutDashboard },
+  { name: 'Field Overview', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Plant Diagnosis', href: '/diagnosis', icon: Sprout },
   { name: 'Risk Alerts', href: '/alerts', icon: AlertTriangle },
   { name: 'Field Insights', href: '/insights', icon: LineChart },
