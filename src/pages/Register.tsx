@@ -24,7 +24,7 @@ const Register = () => {
     // Simulate registration process
     setTimeout(() => {
       setIsLoading(false);
-      toast.success("Registration successful! Please check your email to verify your account.");
+      toast.success("Registration successful! Please check your email for verification code.");
       navigate(`/verify-email?email=${encodeURIComponent(email)}`);
     }, 1500);
   };

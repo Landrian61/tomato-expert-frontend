@@ -5,32 +5,34 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft, MailCheck, Mail, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email') || '';
-  const token = searchParams.get('token') || '';
   
-  const [verificationState, setVerificationState] = useState<'verifying' | 'success' | 'failed'>('verifying');
+  const [verificationState, setVerificationState] = useState<'pending' | 'verifying' | 'success' | 'failed'>('pending');
+  const [verificationCode, setVerificationCode] = useState('');
   const [isResending, setIsResending] = useState(false);
 
-  useEffect(() => {
-    // If a token is provided, attempt to verify it
-    if (token) {
-      // Simulate verification process with backend
-      setTimeout(() => {
-        // For demo purposes, any token that starts with 'valid' is considered valid
-        if (token.startsWith('valid')) {
-          setVerificationState('success');
-          toast.success('Email verified successfully!');
-        } else {
-          setVerificationState('failed');
-          toast.error('Email verification failed. Please try again.');
-        }
-      }, 2000);
-    }
-  }, [token]);
+  // For demo purposes, we'll use a hardcoded valid code
+  const VALID_CODE = '123456';
+
+  const handleVerifyCode = () => {
+    setVerificationState('verifying');
+    
+    // Simulate verification process with backend
+    setTimeout(() => {
+      if (verificationCode === VALID_CODE) {
+        setVerificationState('success');
+        toast.success('Email verified successfully!');
+      } else {
+        setVerificationState('failed');
+        toast.error('Invalid verification code. Please try again.');
+      }
+    }, 1500);
+  };
 
   const handleResendVerification = () => {
     setIsResending(true);
@@ -38,7 +40,8 @@ const VerifyEmail = () => {
     // Simulate resending verification email
     setTimeout(() => {
       setIsResending(false);
-      toast.success(`Verification email resent to ${email}. Please check your inbox.`);
+      setVerificationState('pending'); // Reset to pending state
+      toast.success(`Verification code resent to ${email}. Please check your inbox.`);
     }, 1500);
   };
 
@@ -53,6 +56,11 @@ const VerifyEmail = () => {
         <Card className="w-full">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
+              {verificationState === 'pending' && (
+                <div className="h-12 w-12 rounded-full bg-warning flex items-center justify-center">
+                  <Mail className="h-6 w-6 text-white" />
+                </div>
+              )}
               {verificationState === 'verifying' && (
                 <div className="h-12 w-12 rounded-full bg-warning flex items-center justify-center">
                   <Mail className="h-6 w-6 text-white" />
@@ -70,17 +78,55 @@ const VerifyEmail = () => {
               )}
             </div>
             <CardTitle className="text-2xl font-bold text-center">
-              {verificationState === 'verifying' && 'Verifying Your Email'}
+              {verificationState === 'pending' && 'Verify Your Email'}
+              {verificationState === 'verifying' && 'Verifying Code...'}
               {verificationState === 'success' && 'Email Verified!'}
               {verificationState === 'failed' && 'Verification Failed'}
             </CardTitle>
             <CardDescription className="text-center">
-              {verificationState === 'verifying' && 'Please wait while we verify your email address.'}
+              {verificationState === 'pending' && `We've sent a 6-digit code to ${email}. Enter it below to verify your email.`}
+              {verificationState === 'verifying' && 'Please wait while we verify your code.'}
               {verificationState === 'success' && 'Thank you for verifying your email address.'}
               {verificationState === 'failed' && 'We could not verify your email address. Please try again.'}
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col items-center">
+          <CardContent className="flex flex-col items-center space-y-4">
+            {verificationState === 'pending' && (
+              <>
+                <div className="w-full flex justify-center my-4">
+                  <InputOTP 
+                    maxLength={6} 
+                    value={verificationCode} 
+                    onChange={setVerificationCode}
+                    render={({ slots }) => (
+                      <InputOTPGroup>
+                        {slots.map((slot, index) => (
+                          <InputOTPSlot key={index} {...slot} index={index} />
+                        ))}
+                      </InputOTPGroup>
+                    )}
+                  />
+                </div>
+                <Button 
+                  onClick={handleVerifyCode} 
+                  className="w-full bg-plant hover:bg-plant-dark"
+                  disabled={verificationCode.length !== 6}
+                >
+                  Verify Email
+                </Button>
+                <p className="text-sm text-center text-muted-foreground mt-2">
+                  Didn't receive a code?{" "}
+                  <button 
+                    className="text-plant hover:text-plant-dark font-medium"
+                    onClick={handleResendVerification}
+                    disabled={isResending}
+                  >
+                    Resend
+                  </button>
+                </p>
+              </>
+            )}
+            
             {verificationState === 'verifying' && (
               <div className="flex flex-col items-center space-y-4">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-plant"></div>
@@ -101,9 +147,14 @@ const VerifyEmail = () => {
               <div className="flex flex-col items-center space-y-4">
                 <AlertCircle className="h-16 w-16 text-tomato" />
                 <p className="text-center text-muted-foreground">
-                  The verification link may have expired or is invalid. 
-                  {email && ` We can send a new verification link to ${email}.`}
+                  The verification code is invalid or expired. Please try again.
                 </p>
+                <Button 
+                  className="w-full"
+                  onClick={() => setVerificationState('pending')}
+                >
+                  Try Again
+                </Button>
               </div>
             )}
           </CardContent>
@@ -117,24 +168,18 @@ const VerifyEmail = () => {
               </Button>
             )}
             
-            {verificationState === 'failed' && (
+            {(verificationState === 'failed' || verificationState === 'pending') && (
               <>
-                {email && (
+                {isResending ? (
                   <Button 
+                    variant="outline"
                     className="w-full"
-                    onClick={handleResendVerification}
-                    disabled={isResending}
+                    disabled={true}
                   >
-                    {isResending ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Resending...
-                      </>
-                    ) : (
-                      'Resend Verification Email'
-                    )}
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Resending...
                   </Button>
-                )}
+                ) : null}
                 <Button 
                   variant="outline"
                   className="w-full"
@@ -143,12 +188,6 @@ const VerifyEmail = () => {
                   Back to Login
                 </Button>
               </>
-            )}
-            
-            {(verificationState === 'verifying' && email) && (
-              <p className="text-sm text-center text-muted-foreground">
-                Verifying {email}
-              </p>
             )}
           </CardFooter>
         </Card>
