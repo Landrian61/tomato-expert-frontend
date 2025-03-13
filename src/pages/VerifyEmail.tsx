@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { ArrowLeft, MailCheck, Mail, RefreshCw, CheckCircle, AlertCircle } from 'lucide-react';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Input } from "@/components/ui/input";
 
 const VerifyEmail = () => {
   const navigate = useNavigate();
@@ -94,18 +94,39 @@ const VerifyEmail = () => {
             {verificationState === 'pending' && (
               <>
                 <div className="w-full flex justify-center my-4">
-                  <InputOTP 
-                    maxLength={6} 
-                    value={verificationCode} 
-                    onChange={setVerificationCode}
-                    render={({ slots }) => (
-                      <InputOTPGroup>
-                        {slots.map((slot, index) => (
-                          <InputOTPSlot key={index} {...slot} index={index} />
-                        ))}
-                      </InputOTPGroup>
-                    )}
-                  />
+                  <div className="flex gap-2">
+                    {[0, 1, 2, 3, 4, 5].map((index) => (
+                      <Input
+                        key={index}
+                        type="text"
+                        maxLength={1}
+                        className="w-10 h-10 text-center"
+                        value={verificationCode[index] || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val.match(/^[0-9]$/) || val === '') {
+                            const newCode = verificationCode.split('');
+                            newCode[index] = val;
+                            setVerificationCode(newCode.join(''));
+                            
+                            // Auto-focus next input if a digit was entered
+                            if (val !== '' && index < 5) {
+                              const nextInput = document.querySelector(`input[data-index="${index + 1}"]`) as HTMLInputElement;
+                              if (nextInput) nextInput.focus();
+                            }
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          // Handle backspace - move to previous input
+                          if (e.key === 'Backspace' && !verificationCode[index] && index > 0) {
+                            const prevInput = document.querySelector(`input[data-index="${index - 1}"]`) as HTMLInputElement;
+                            if (prevInput) prevInput.focus();
+                          }
+                        }}
+                        data-index={index}
+                      />
+                    ))}
+                  </div>
                 </div>
                 <Button 
                   onClick={handleVerifyCode} 
