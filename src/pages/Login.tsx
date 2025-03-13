@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ArrowLeft, EyeIcon, EyeOffIcon } from 'lucide-react';
+import axios from 'axios';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -14,17 +15,46 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Simulate login process
-    setTimeout(() => {
-      setIsLoading(false);
-      toast.success("Login successful!");
-      navigate('/');
-    }, 1500);
+
+   try {
+     const response = await axios.post("http://localhost:5000/api/login", {
+       email,
+       password
+     });
+
+     console.log(response.data);
+
+     if (response.data.token) {
+       localStorage.setItem("token", response.data.token);
+
+       // Fetch user data after successful login
+       const userResponse = await axios.get("http://localhost:5000/api/user", {
+         headers: { Authorization: `Bearer ${response.data.token}` }
+       });
+       localStorage.setItem("userData", JSON.stringify(userResponse.data));
+       
+       toast.success("Login successful!");
+       navigate("/dashboard");
+     } else {
+       const errorMsg = response.data.message || "Login failed. Please try again.";
+       setError(errorMsg);
+       toast.error(errorMsg);
+     }
+   } catch (err) {
+     let errorMsg = "Network error. Please try again.";
+     if (axios.isAxiosError(err) && err.response && err.response.data) {
+       errorMsg = err.response.data.message || "Login failed. Please try again.";
+     }
+     setError(errorMsg);
+     toast.error(errorMsg);
+   } finally {
+     setIsLoading(false);
+   }
   };
 
   return (
@@ -91,6 +121,10 @@ const Login = () => {
                   </button>
                 </div>
               </div>
+              
+              {error && (
+                <div className="text-red-500 text-sm">{error}</div>
+              )}
               
               <Button type="submit" className="w-full bg-plant hover:bg-plant-dark" disabled={isLoading}>
                 {isLoading ? "Logging in..." : "Log in"}
