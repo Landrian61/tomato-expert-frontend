@@ -1,18 +1,26 @@
-
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { ArrowLeft, EyeIcon, EyeOffIcon } from 'lucide-react';
-import axios from 'axios';
+import { ArrowLeft, EyeIcon, EyeOffIcon } from "lucide-react";
+import { login } from "@/services/authService";
+import { useAuth } from "@/context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { setUser } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -20,51 +28,53 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
-   try {
-     const response = await axios.post("http://localhost:5000/api/login", {
-       email,
-       password
-     });
+    try {
+      const response = await login({ email, password });
 
-     console.log(response.data);
+      if (response.accessToken) {
+        // Set the user in the auth context
+        setUser(response.user);
 
-     if (response.data.token) {
-       localStorage.setItem("token", response.data.token);
+        toast.success("Login successful!");
+        navigate("/dashboard");
+      } else {
+        throw new Error("Login failed. Please try again.");
+      }
+    } catch (err: any) {
+      let errorMsg = "Network error. Please try again.";
 
-       // Fetch user data after successful login
-       const userResponse = await axios.get("http://localhost:5000/api/user", {
-         headers: { Authorization: `Bearer ${response.data.token}` }
-       });
-       localStorage.setItem("userData", JSON.stringify(userResponse.data));
-       
-       toast.success("Login successful!");
-       navigate("/dashboard");
-     } else {
-       const errorMsg = response.data.message || "Login failed. Please try again.";
-       setError(errorMsg);
-       toast.error(errorMsg);
-     }
-   } catch (err) {
-     let errorMsg = "Network error. Please try again.";
-     if (axios.isAxiosError(err) && err.response && err.response.data) {
-       errorMsg = err.response.data.message || "Login failed. Please try again.";
-     }
-     setError(errorMsg);
-     toast.error(errorMsg);
-   } finally {
-     setIsLoading(false);
-   }
+      if (err.response?.data) {
+        errorMsg =
+          err.response.data.message || "Login failed. Please try again.";
+
+        // Handle verification needed error
+        if (err.response.data.needsVerification) {
+          toast.error("Email verification required");
+          navigate(`/verify-email?email=${encodeURIComponent(email)}`);
+          return;
+        }
+      }
+
+      setError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-muted">
       <div className="w-full max-w-md px-4">
-        <Link to="/" className="flex items-center gap-2 text-muted-foreground mb-6 hover:text-foreground transition-colors">
+        <Link
+          to="/"
+          className="flex items-center gap-2 text-muted-foreground mb-6 hover:text-foreground transition-colors"
+        >
           <ArrowLeft className="h-4 w-4" />
           Back to Home
         </Link>
-        
+
         <Card className="w-full">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
@@ -72,7 +82,9 @@ const Login = () => {
                 <span className="text-white font-bold text-lg">TE</span>
               </div>
             </div>
-            <CardTitle className="text-2xl font-bold text-center">Welcome Back</CardTitle>
+            <CardTitle className="text-2xl font-bold text-center">
+              Welcome Back
+            </CardTitle>
             <CardDescription className="text-center">
               Enter your credentials to access your account
             </CardDescription>
@@ -90,11 +102,14 @@ const Login = () => {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <Link to="#" className="text-xs text-plant hover:text-plant-dark">
+                  <Link
+                    to="#"
+                    className="text-xs text-plant hover:text-plant-dark"
+                  >
                     Forgot Password?
                   </Link>
                 </div>
@@ -121,12 +136,14 @@ const Login = () => {
                   </button>
                 </div>
               </div>
-              
-              {error && (
-                <div className="text-red-500 text-sm">{error}</div>
-              )}
-              
-              <Button type="submit" className="w-full bg-plant hover:bg-plant-dark" disabled={isLoading}>
+
+              {error && <div className="text-red-500 text-sm">{error}</div>}
+
+              <Button
+                type="submit"
+                className="w-full bg-plant hover:bg-plant-dark"
+                disabled={isLoading}
+              >
                 {isLoading ? "Logging in..." : "Log in"}
               </Button>
             </form>
@@ -134,7 +151,10 @@ const Login = () => {
           <CardFooter className="flex justify-center">
             <p className="text-sm text-muted-foreground">
               Don't have an account?{" "}
-              <Link to="/register" className="text-plant hover:text-plant-dark font-medium">
+              <Link
+                to="/register"
+                className="text-plant hover:text-plant-dark font-medium"
+              >
                 Sign up
               </Link>
             </p>
