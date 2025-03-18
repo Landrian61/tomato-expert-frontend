@@ -2,7 +2,7 @@ import axios from 'axios';
 import { openDB } from 'idb';
 
 // Base API URL
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://tomato-expert-backend.onrender.com/api';
 
 // Types
 export interface UserData {
