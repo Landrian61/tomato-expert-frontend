@@ -1,8 +1,13 @@
+
 import axios from 'axios';
 import { openDB } from 'idb';
 
 // Base API URL
-const API_URL = 'https://tomato-expert-backend.onrender.com/api';
+// In development, we use the relative URL which will be proxied by Vite
+// In production, we use the full URL
+const API_URL = import.meta.env.DEV 
+  ? '/api' 
+  : 'https://tomato-expert-backend.onrender.com/api';
 
 // Types
 export interface UserData {
