@@ -38,7 +38,7 @@ const Header: React.FC<HeaderProps> = ({ title }) => {
     <header className="sticky top-0 z-10 bg-background border-b px-4 py-3 flex items-center justify-between">
       <div className="flex items-center">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-full bg-tomato flex items-center justify-center text-white">
+          <div className="w-8 h-8 flex items-center justify-center">
             <img src="/tomato.svg" alt="Tomato Expert Logo" className="w-6 h-6" />
           </div>
           <h1 className="text-xl font-bold">{title}</h1>
