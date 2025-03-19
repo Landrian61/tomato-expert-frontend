@@ -43,8 +43,8 @@ const Sidebar: React.FC = () => {
   return (
     <div className="h-full w-64 border-r border-sidebar-border bg-sidebar flex flex-col">
       <div className="flex items-center px-6 py-6">
-        <div className="flex items-center justify-center">
-          <img src="/tomato.svg" alt="Tomato Expert Logo" className="w-8 h-8" />
+        <div className="h-10 w-10 flex items-center justify-center">
+          <img src="/tomato.svg" alt="Tomato Expert Logo" className="w-7 h-7" />
         </div>
         <h1 className="ml-3 text-xl font-semibold text-sidebar-foreground">
           Tomato Expert

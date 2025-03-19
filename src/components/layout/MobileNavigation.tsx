@@ -25,7 +25,7 @@ const MobileNavigation: React.FC = () => {
             className={cn(
               "flex flex-col items-center justify-center px-2 py-3 text-xs font-medium",
               location.pathname === item.href
-                ? "text-sidebar-primary"
+                ? "text-sidebar-primary-foreground"
                 : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
             )}
           >
