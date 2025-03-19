@@ -1,5 +1,6 @@
+
 import React from "react";
-import { Menu, Sun, Moon, LogOut } from "lucide-react";
+import { Sun, Moon, LogOut } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -17,7 +18,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ title }) => {
-  const { theme, toggleTheme, toggleMobileMenu } = useAppContext();
+  const { theme, toggleTheme } = useAppContext();
   const { user, logout } = useAuth();
   const isMobile = useIsMobile();
 
@@ -36,20 +37,9 @@ const Header: React.FC<HeaderProps> = ({ title }) => {
   return (
     <header className="sticky top-0 z-10 bg-background border-b px-4 py-3 flex items-center justify-between">
       <div className="flex items-center">
-        {isMobile && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="mr-2"
-            onClick={toggleMobileMenu}
-          >
-            <Menu size={20} />
-            <span className="sr-only">Menu</span>
-          </Button>
-        )}
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-full bg-tomato flex items-center justify-center text-white font-bold">
-            TE
+          <div className="w-8 h-8 rounded-full bg-tomato flex items-center justify-center text-white">
+            <img src="/tomato.svg" alt="Tomato Expert Logo" className="w-6 h-6" />
           </div>
           <h1 className="text-xl font-bold">{title}</h1>
         </div>

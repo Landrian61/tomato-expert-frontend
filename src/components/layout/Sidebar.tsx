@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -43,7 +44,7 @@ const Sidebar: React.FC = () => {
     <div className="h-full w-64 border-r border-sidebar-border bg-sidebar flex flex-col">
       <div className="flex items-center px-6 py-6">
         <div className="h-10 w-10 rounded-full bg-tomato flex items-center justify-center">
-          <span className="text-white font-bold">TE</span>
+          <img src="/tomato.svg" alt="Tomato Expert Logo" className="w-7 h-7" />
         </div>
         <h1 className="ml-3 text-xl font-semibold text-sidebar-foreground">
           Tomato Expert

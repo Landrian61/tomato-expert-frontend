@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ const Landing = () => {
           <nav className="flex justify-between items-center mb-16">
             <div className="flex items-center">
               <div className="h-10 w-10 rounded-full bg-tomato flex items-center justify-center">
-                <span className="text-white font-bold">TE</span>
+                <img src="/tomato.svg" alt="Tomato Expert Logo" className="w-7 h-7" />
               </div>
               <h1 className="ml-3 text-xl font-semibold text-white">Tomato Expert</h1>
             </div>
@@ -34,9 +35,6 @@ const Landing = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button asChild size="lg" className="bg-white text-plant hover:bg-white/90">
                   <Link to="/register">Get Started</Link>
-                </Button>
-                <Button asChild variant="outline" size="lg" className="border-white text-white hover:bg-white/10">
-                  <Link to="/diagnosis">Try Demo</Link>
                 </Button>
               </div>
             </div>
@@ -173,7 +171,7 @@ const Landing = () => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-6 md:mb-0">
               <div className="h-10 w-10 rounded-full bg-tomato flex items-center justify-center">
-                <span className="text-white font-bold">TE</span>
+                <img src="/tomato.svg" alt="Tomato Expert Logo" className="w-7 h-7" />
               </div>
               <h1 className="ml-3 text-xl font-semibold">Tomato Expert</h1>
             </div>
