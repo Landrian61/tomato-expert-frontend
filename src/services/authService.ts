@@ -1,12 +1,11 @@
-
 import axios from 'axios';
 import { openDB } from 'idb';
 
 // Base API URL
-// In development, we use the relative URL which will be proxied by Vite
-// In production, we use the full URL
+// In development, we use the local backend URL
+// In production, we use the deployed URL
 const API_URL = import.meta.env.DEV 
-  ? '/api' 
+  ? 'http://localhost:5000/api' 
   : 'https://tomato-expert-backend.onrender.com/api';
 
 // Types
@@ -71,6 +70,7 @@ const clearAuthFromIDB = async () => {
 // Configure axios instance with interceptors
 const api = axios.create({
   baseURL: API_URL,
+  withCredentials: true, // Enable sending cookies in cross-origin requests
 });
 
 // Request interceptor for adding token
