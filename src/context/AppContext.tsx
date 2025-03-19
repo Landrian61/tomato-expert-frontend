@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -25,10 +26,25 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<ThemeMode>('light');
+  // Check for system preference initially
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const initialTheme = localStorage.getItem('theme') as ThemeMode || (prefersDark ? 'dark' : 'light');
+  
+  const [theme, setTheme] = useState<ThemeMode>(initialTheme);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
+
+  // Apply theme class on mount and when theme changes
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    // Save theme preference to localStorage
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   // Check for existing authentication on mount
   useEffect(() => {
@@ -49,11 +65,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
   };
 
   const toggleMobileMenu = () => {
@@ -85,7 +96,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         toggleTheme,
         isMobileMenuOpen,
         toggleMobileMenu,
-        isAuthenticated,
+        isAuthenticated, 
         user,
         login,
         logout,
