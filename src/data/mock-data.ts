@@ -1,34 +1,4 @@
 
-export const environmentalData = {
-  temperature: {
-    value: '78°F',
-    change: '+3°F',
-    trend: 'up' as const
-  },
-  humidity: {
-    value: '65%',
-    change: '-5%',
-    trend: 'down' as const
-  },
-  soilMoisture: {
-    value: '42%',
-    change: '+2%',
-    trend: 'up' as const
-  }
-};
-
-export const criValue = 62;
-
-export const criTrendData = [
-  { date: 'Mon', value: 32 },
-  { date: 'Tue', value: 40 },
-  { date: 'Wed', value: 45 },
-  { date: 'Thu', value: 58 },
-  { date: 'Fri', value: 62 },
-  { date: 'Sat', value: 58 },
-  { date: 'Sun', value: 62 }
-];
-
 export const alertsData = [
   {
     id: 1,

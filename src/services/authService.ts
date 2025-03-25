@@ -102,35 +102,99 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// This is a partial update to be applied to the authService.ts file
+// Specifically targeting the response interceptor for token refresh
+
 // Response interceptor for token refresh
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // If error is 403 (token expired) and we haven't retried yet
-    if (error.response?.status === 403 && !originalRequest._retry) {
+    // Only attempt token refresh if we get a 401 error (Unauthorized) 
+    // and we haven't already tried refreshing for this request
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
       try {
-        const refreshResponse = await refreshToken();
+        console.log('Attempting to refresh token...');
+        const refreshResponse = await axios.post(
+          `${API_URL}/refresh-token`, 
+          {}, 
+          { withCredentials: true }
+        );
         
-        if (refreshResponse.accessToken) {
-          // Update token in request and retry
-          originalRequest.headers.Authorization = `Bearer ${refreshResponse.accessToken}`;
+        if (refreshResponse.data.accessToken) {
+          // Update token in localStorage and IndexedDB
+          const authData = JSON.parse(localStorage.getItem('authData') || 'null') || await getAuthFromIDB();
+          if (authData) {
+            authData.accessToken = refreshResponse.data.accessToken;
+            localStorage.setItem('authData', JSON.stringify(authData));
+            await saveAuthToIDB(authData);
+          }
+          
+          // Update token in the original request and retry
+          originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.accessToken}`;
           return api(originalRequest);
         }
       } catch (refreshError) {
-        // If refresh fails, logout and redirect
-        await logout();
-        window.location.href = '/login';
-        return Promise.reject(refreshError);
+        console.error('Token refresh failed:', refreshError);
+        
+        // If refresh fails due to invalid refresh token (403),
+        // proceed with limited functionality - don't force logout
+        if (refreshError.response?.status !== 403) {
+          // For other errors, logout the user
+          await logout();
+          // Allow the app to continue in a limited state
+          // Only redirect to login for serious auth issues
+          if (window.location.pathname.includes('/dashboard')) {
+            window.location.href = '/login';
+          }
+        }
       }
+    }
+
+    // If the error is 403 on the refresh token endpoint, 
+    // continue without forcing a logout
+    if (error.config?.url === '/refresh-token' && error.response?.status === 403) {
+      console.warn('Refresh token expired or invalid. Limited functionality available.');
+      return Promise.reject(error);
     }
 
     return Promise.reject(error);
   }
 );
+
+// Updated refreshToken function
+const refreshToken = async () => {
+  try {
+    // Use a direct axios call instead of the api instance to avoid interceptor loops
+    const response = await axios.post(
+      `${API_URL}/refresh-token`, 
+      {}, 
+      { withCredentials: true }
+    );
+    
+    if (response.data.accessToken) {
+      // Update access token in storage
+      const authData = JSON.parse(localStorage.getItem('authData') || 'null') || await getAuthFromIDB();
+      
+      if (authData) {
+        authData.accessToken = response.data.accessToken;
+        localStorage.setItem('authData', JSON.stringify(authData));
+        await saveAuthToIDB(authData);
+      }
+      
+      return response.data;
+    }
+    
+    return { accessToken: null };
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+    // For 403 errors, we'll just return null token but not force logout
+    return { accessToken: null };
+  }
+};
 
 // Auth Service Functions
 const register = async (userData: { firstName: string; lastName: string; email: string; password: string }) => {
@@ -181,27 +245,6 @@ const login = async (credentials: { email: string; password: string }) => {
   }
 };
 
-const refreshToken = async () => {
-  try {
-    // Try to get refresh token from cookie (handled by browser)
-    const response = await api.post('/refresh-token');
-    
-    if (response.data.accessToken) {
-      // Update access token in storage
-      const authData = JSON.parse(localStorage.getItem('authData') || 'null') || await getAuthFromIDB();
-      
-      if (authData) {
-        authData.accessToken = response.data.accessToken;
-        localStorage.setItem('authData', JSON.stringify(authData));
-        await saveAuthToIDB(authData);
-      }
-    }
-    
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-};
 
 const logout = async () => {
   try {

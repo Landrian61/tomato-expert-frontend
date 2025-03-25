@@ -13,8 +13,8 @@ const Landing = () => {
         <div className="container mx-auto px-4 py-6">
           <nav className="flex justify-between items-center mb-16">
             <div className="flex items-center">
-              <div className="h-10 w-10 rounded-full bg-tomato flex items-center justify-center">
-                <img src="/tomato.svg" alt="Tomato Expert Logo" className="w-7 h-7" />
+              <div className="h-10 w-10 rounded-full flex items-center justify-center">
+                <img src="/tomato.svg" alt="Tomato Expert Logo" className="w-14 h-12" />
               </div>
               <h1 className="ml-3 text-xl font-semibold text-white">Tomato Expert</h1>
             </div>
@@ -170,7 +170,7 @@ const Landing = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center mb-6 md:mb-0">
-              <div className="h-10 w-10 rounded-full bg-tomato flex items-center justify-center">
+              <div className="h-10 w-10 rounded-full flex items-center justify-center">
                 <img src="/tomato.svg" alt="Tomato Expert Logo" className="w-7 h-7" />
               </div>
               <h1 className="ml-3 text-xl font-semibold">Tomato Expert</h1>
