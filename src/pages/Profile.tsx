@@ -12,6 +12,8 @@ import { getUserProfile } from "@/services/authService";
 import { uploadProfileImage } from "@/services/imageService";
 import NotificationSettings from "@/components/profile/NotificationSettings";
 import AppSettings from "@/components/profile/AppSettings";
+import LocationUpdate from "@/components/profile/LocationUpdate";
+import { refreshEnvironmentalData } from "@/services/environmentalDataService";
 
 const Profile = () => {
   const { user, setUser } = useAuth();
@@ -81,6 +83,17 @@ const Profile = () => {
       setIsLoading(false);
       toast.success("Profile changes saved successfully");
     }, 1000);
+  };
+
+  const handleLocationUpdated = async () => {
+    // Refresh environmental data after location update
+    try {
+      const response = await refreshEnvironmentalData();
+      toast.success("Environmental data refreshed for your new location");
+    } catch (error) {
+      console.error("Failed to refresh environmental data:", error);
+      // No need to show error toast as the updateUserLocation already shows one
+    }
   };
 
   // Generate avatar fallback from user initials
@@ -160,19 +173,13 @@ const Profile = () => {
                     disabled
                   />
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="location">Farm Location</Label>
-                  <Input id="location" placeholder="Enter your farm location" />
-                  <p className="text-xs text-muted-foreground">
-                    Your location is used for climate data and location-specific
-                    recommendations.
-                  </p>
-                </div>
               </div>
             </div>
           </CardContent>
         </Card>
+
+        {/* Farm Location Update */}
+        <LocationUpdate onLocationUpdated={handleLocationUpdated} />
 
         <NotificationSettings />
         <AppSettings />
