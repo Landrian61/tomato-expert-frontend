@@ -69,8 +69,12 @@ const Register = () => {
         <Card className="w-full">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
-              <div className="h-12 w-12 rounded-full bg-tomato flex items-center justify-center">
-                <span className="text-white font-bold text-lg">TE</span>
+              <div className="h-10 w-10 rounded-full flex items-center justify-center">
+                <img
+                  src="/tomato.svg"
+                  alt="Tomato Expert Logo"
+                  className="w-7 h-7"
+                />
               </div>
             </div>
             <CardDescription>
@@ -89,7 +93,6 @@ const Register = () => {
                   <Label htmlFor="firstName">First Name</Label>
                   <Input
                     id="firstName"
-                    placeholder="John"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     required
@@ -99,7 +102,6 @@ const Register = () => {
                   <Label htmlFor="lastName">Last Name</Label>
                   <Input
                     id="lastName"
-                    placeholder="Doe"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     required
@@ -112,7 +114,7 @@ const Register = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="john.doe@example.com"
+                  placeholder="example@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

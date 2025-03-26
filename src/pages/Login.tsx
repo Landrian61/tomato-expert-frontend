@@ -78,8 +78,12 @@ const Login = () => {
         <Card className="w-full">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-4">
-              <div className="h-12 w-12 rounded-full bg-tomato flex items-center justify-center">
-                <span className="text-white font-bold text-lg">TE</span>
+              <div className="h-10 w-10 rounded-full flex items-center justify-center">
+                <img
+                  src="/tomato.svg"
+                  alt="Tomato Expert Logo"
+                  className="w-7 h-7"
+                />
               </div>
             </div>
             <CardTitle className="text-2xl font-bold text-center">
@@ -96,7 +100,7 @@ const Login = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="john.doe@example.com"
+                  placeholder="example@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

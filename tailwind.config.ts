@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -53,20 +52,28 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				// Updated tomato colors based on the new design
 				tomato: {
-					DEFAULT: '#e63946',
-					light: '#f28b95',
-					dark: '#c8242f',
+					DEFAULT: '#e84e25',
+					light: '#f9e8e5',
+					dark: '#c93d17',
 				},
+				// Updated plant colors based on the new design
 				plant: {
-					DEFAULT: '#2a9d8f',
-					light: '#57c4b8',
-					dark: '#1e7268',
+					DEFAULT: '#1f3c26',
+					light: '#e8f4ea',
+					dark: '#142718',
 				},
 				warning: {
 					DEFAULT: '#f4a261',
 					light: '#f8c097',
 					dark: '#e76f51',
+				},
+				// New background colors 
+				page: {
+					light: '#f9f9f7',
+					DEFAULT: '#f9f9f7',
+					dark: '#e5e5e2',
 				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
