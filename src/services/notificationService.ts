@@ -218,7 +218,7 @@ export const requestTestTip = async (): Promise<{ message: string }> => {
 
 export async function getNotificationSettings(): Promise<NotificationSettings> {
   try {
-    const response = await axios.get('/notifications/settings', getAuthHeader());
+    const response = await axios.get(`${API_URL}/notifications/settings`, getAuthHeader());
     return response.data;
   } catch (error) {
     console.error('Error fetching notification settings:', error);
@@ -226,18 +226,9 @@ export async function getNotificationSettings(): Promise<NotificationSettings> {
   }
 }
 
-export async function updateNotificationSettings(settings: Partial<NotificationSettings>): Promise<void> {
-  try {
-    await axios.patch('/notifications/settings', settings, getAuthHeader());
-  } catch (error) {
-    console.error('Error updating notification settings:', error);
-    throw error;
-  }
-}
-
 export async function getAppPermissions(): Promise<AppPermissions> {
   try {
-    const response = await axios.get('/user/permissions', getAuthHeader());
+    const response = await axios.get(`${API_URL}/user/permissions`, getAuthHeader());
     return response.data;
   } catch (error) {
     console.error('Error fetching app permissions:', error);
@@ -247,7 +238,7 @@ export async function getAppPermissions(): Promise<AppPermissions> {
 
 export async function updateAppPermissions(permissions: Partial<AppPermissions>): Promise<void> {
   try {
-    await axios.patch('/user/permissions', permissions, getAuthHeader());
+    await axios.patch(`${API_URL}/user/permissions`, permissions, getAuthHeader());
   } catch (error) {
     console.error('Error updating app permissions:', error);
     throw error;
