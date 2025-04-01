@@ -8,13 +8,13 @@ import { AuthProvider } from "./context/AuthContext";
 import Index from "./pages/Dashboard";
 import Diagnosis from "./pages/Diagnosis";
 import Alerts from "./pages/Alerts";
-import Insights from "./pages/Insights";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import VerifyEmail from "./pages/VerifyEmail";
+import DiagnosisDetail from "./pages/DiagnosisDetail";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -37,8 +37,8 @@ const App = () => (
               <Route element={<ProtectedRoute />}>
                 <Route path="/dashboard" element={<Index />} />
                 <Route path="/diagnosis" element={<Diagnosis />} />
+                <Route path="/diagnosis/:id" element={<DiagnosisDetail />} />
                 <Route path="/alerts" element={<Alerts />} />
-                <Route path="/insights" element={<Insights />} />
                 <Route path="/profile" element={<Profile />} />
               </Route>
 

@@ -60,12 +60,12 @@ export const getLatestEnvironmentalData = async (): Promise<EnvironmentalData> =
   ];
 
   let lastError: any = null;
-  
+
   // Check if we're working offline or in a development environment
   // We'll use the mock data more readily in these cases
   const isOfflineMode = localStorage.getItem('offlineMode') === 'true';
   const isDevelopment = process.env.NODE_ENV === 'development';
-  
+
   if (isOfflineMode) {
     console.log('🔌 Operating in offline mode - using mock data');
     return getMockEnvironmentalData();
@@ -85,16 +85,16 @@ export const getLatestEnvironmentalData = async (): Promise<EnvironmentalData> =
       if (isDevelopment) console.log(`✅ Success with path: ${path}`);
       return response.data;
     } catch (error: any) {
-      const errorMsg = error.response ? 
-        `Status: ${error.response.status} - ${error.response.statusText}` : 
+      const errorMsg = error.response ?
+        `Status: ${error.response.status} - ${error.response.statusText}` :
         error.message;
-      
+
       if (isDevelopment) console.error(`❌ Error with path ${path}: ${errorMsg}`);
-      
+
       if (error.response && error.response.status === 401) {
         console.warn('🔑 Authentication required - user may need to log in');
       }
-      
+
       lastError = error;
       // Continue to next path
     }
@@ -103,12 +103,12 @@ export const getLatestEnvironmentalData = async (): Promise<EnvironmentalData> =
   if (isDevelopment) {
     console.error('❌ All API paths failed. Using fallback data.');
     console.error('Last error:', lastError?.message || 'Unknown error');
-    
+
     // Add a button to run the test function if in development
-    console.log('%c You can run window.testEnvironmentalApi() to debug connection issues', 
+    console.log('%c You can run window.testEnvironmentalApi() to debug connection issues',
       'background: #333; color: white; padding: 4px; border-radius: 4px');
   }
-  
+
   return getMockEnvironmentalData();
 };
 
@@ -118,11 +118,11 @@ export const getLatestEnvironmentalData = async (): Promise<EnvironmentalData> =
  */
 const getMockEnvironmentalData = (): EnvironmentalData => {
   console.log('📊 Using mock environmental data');
-  
+
   // Generate slightly different mock data each time
   const variation = Math.random() * 5 - 2.5; // Random variation between -2.5 and 2.5
   const timestamp = new Date().toISOString();
-  
+
   return {
     date: timestamp,
     currentConditions: {
@@ -175,22 +175,22 @@ export const getCRIHistory = async (period: 'day' | 'week' | 'month' | 'year'): 
   }
 
   console.error('All CRI history API paths failed. Using fallback data.');
-  
+
   // Generate mock data if all API requests fail
   const today = new Date();
   const mockHistory = [];
-  
+
   // Generate days of mock data based on the period
   const days = period === 'day' ? 1 : period === 'week' ? 7 : period === 'month' ? 30 : 365;
-  
+
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date();
     date.setDate(today.getDate() - i);
-    
+
     // Create some variation in CRI values centered around 50 (healthy)
     let cri = 50 + Math.sin(i * 0.5) * 15;
     cri = Math.round(cri * 100) / 100;
-    
+
     // Determine risk level based on CRI
     let riskLevel;
     if (cri >= 45 && cri <= 55) {
@@ -200,7 +200,7 @@ export const getCRIHistory = async (period: 'day' | 'week' | 'month' | 'year'): 
     } else {
       riskLevel = "Early Blight Risk";
     }
-    
+
     mockHistory.push({
       _id: `mock-${i}`,
       date: date.toISOString(),
@@ -208,7 +208,7 @@ export const getCRIHistory = async (period: 'day' | 'week' | 'month' | 'year'): 
       cri
     });
   }
-  
+
   return {
     history: mockHistory,
     trend: {
@@ -292,7 +292,7 @@ export const refreshEnvironmentalData = async () => {
  */
 export const formatEnvironmentalDataForUI = (data: EnvironmentalData) => {
   // Maps the API response to the format expected by UI components
-  
+
   // Helper function to determine trend type based on percentage
   const determineTrend = (changeStr: string | undefined): 'up' | 'down' | 'stable' => {
     if (!changeStr) return 'stable';
@@ -300,21 +300,28 @@ export const formatEnvironmentalDataForUI = (data: EnvironmentalData) => {
     if (Math.abs(value) < 0.5) return 'stable'; // Consider very small changes as stable
     return value > 0 ? 'up' : 'down';
   };
-  
+
+  const roundPercentage = (value: string | undefined): string | undefined => {
+    if (value === undefined) return undefined;
+    const num = parseFloat(value);
+    if (isNaN(num)) return value; // Return original if not a valid number
+    return num.toFixed(1) + '%';
+  };
+
   return {
     temperature: {
       value: data.currentConditions.temperature,
-      change: data.percentageChanges.daily.temperature || '0%',
+      change: roundPercentage(data.percentageChanges.daily.temperature) || '0%',
       trend: determineTrend(data.percentageChanges.daily.temperature)
     },
     humidity: {
       value: data.currentConditions.humidity,
-      change: data.percentageChanges.daily.humidity || '0%',
+      change: roundPercentage(data.percentageChanges.daily.humidity) || '0%',
       trend: determineTrend(data.percentageChanges.daily.humidity)
     },
     soilMoisture: {
       value: data.currentConditions.soilMoisture,
-      change: data.percentageChanges.daily.soilMoisture || '0%',
+      change: roundPercentage(data.percentageChanges.daily.soilMoisture) || '0%',
       trend: determineTrend(data.percentageChanges.daily.soilMoisture)
     }
   };

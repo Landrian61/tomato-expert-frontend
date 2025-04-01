@@ -8,7 +8,6 @@ const navigation = [
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Diagnosis', href: '/diagnosis', icon: Sprout },
   { name: 'Alerts', href: '/alerts', icon: AlertTriangle },
-  { name: 'Insights', href: '/insights', icon: LineChart },
   { name: 'Profile', href: '/profile', icon: User }
 ];
 
@@ -17,7 +16,7 @@ const MobileNavigation: React.FC = () => {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-10 bg-sidebar border-t border-sidebar-border">
-      <div className="grid grid-cols-5">
+      <div className="grid grid-cols-4">
         {navigation.map((item) => (
           <Link
             key={item.name}
