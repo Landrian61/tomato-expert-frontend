@@ -4,6 +4,7 @@ import EnvironmentCard from "@/components/dashboard/EnvironmentCard";
 import RiskGauge from "@/components/dashboard/RiskGauge";
 import ActionButton from "@/components/dashboard/ActionButton";
 import CRITrendChart from "@/components/dashboard/CRITrendChart";
+import RecentDiagnosesWidget from "@/components/dashboard/RecentDiagnosesWidget";
 import { Sprout, AlertTriangle, LineChart, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,7 +30,7 @@ const Dashboard = () => {
 
   return (
     <Layout title="Field Overview">
-      <div className="space-y-6">
+      <div className="space-y-6 pb-4">
         {error ? (
           <Card className="bg-destructive/10 border-destructive/30">
             <CardContent className="p-4">
@@ -116,6 +117,13 @@ const Dashboard = () => {
               )}
             </div>
 
+            {/* Recent Diagnoses Widget */}
+            <div className="grid grid-cols-1 lg:grid-cols-3">
+              <div className="lg:col-span-3">
+                <RecentDiagnosesWidget />
+              </div>
+            </div>
+
             {/* Refresh Button */}
             <div className="flex justify-end">
               <Button
@@ -179,29 +187,6 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             )}
-
-            {/* Quick Actions */}
-            <div>
-              <h2 className="text-lg font-semibold mb-3">Quick Actions</h2>
-              <div className="grid grid-cols-3 gap-4">
-                <ActionButton
-                  title="Plant Diagnosis"
-                  icon={<Sprout className="h-6 w-6" />}
-                  href="/diagnosis"
-                  variant="default"
-                />
-                <ActionButton
-                  title="Risk Alerts"
-                  icon={<AlertTriangle className="h-6 w-6" />}
-                  href="/alerts"
-                />
-                <ActionButton
-                  title="Field Insights"
-                  icon={<LineChart className="h-6 w-6" />}
-                  href="/insights"
-                />
-              </div>
-            </div>
           </>
         )}
       </div>
