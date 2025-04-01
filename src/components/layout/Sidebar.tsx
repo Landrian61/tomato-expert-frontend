@@ -19,7 +19,6 @@ const navigation = [
   { name: "Field Overview", href: "/dashboard", icon: LayoutDashboard },
   { name: "Plant Diagnosis", href: "/diagnosis", icon: Sprout },
   { name: "Risk Alerts", href: "/alerts", icon: AlertTriangle },
-  { name: "Field Insights", href: "/insights", icon: LineChart },
   { name: "My Profile", href: "/profile", icon: User }
 ];
 
