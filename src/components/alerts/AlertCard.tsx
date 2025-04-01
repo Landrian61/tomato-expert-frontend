@@ -13,15 +13,40 @@ import {
 } from "@/components/ui/collapsible";
 
 interface AlertCardProps {
-  notification: Notification;
+  // For actual notifications
+  notification?: Notification;
   onUpdate?: () => void;
+  // For testing
+  title?: string;
+  description?: string;
+  timestamp?: string;
+  riskLevel?: "low" | "medium" | "high" | "critical";
 }
 
-const AlertCard: React.FC<AlertCardProps> = ({ notification, onUpdate }) => {
-  const { _id, title, message, priority, type, read, createdAt } = notification;
+const AlertCard: React.FC<AlertCardProps> = ({
+  notification,
+  onUpdate,
+  // Test props
+  title: testTitle,
+  description: testDescription,
+  timestamp: testTimestamp,
+  riskLevel: testRiskLevel
+}) => {
+  // If we have a notification object, use it, otherwise use test props
+  const title = notification?.title || testTitle || "Untitled Alert";
+  const message =
+    notification?.message || testDescription || "No description available";
+  const priority = notification?.priority || "medium";
+  const type = notification?.type || "system";
+  const read = notification?.read || false;
+  const createdAt =
+    notification?.createdAt || testTimestamp || new Date().toISOString();
+  const _id = notification?._id;
 
   // Map the backend priority to UI risk level
   const getRiskLevel = () => {
+    if (testRiskLevel) return testRiskLevel;
+
     switch (priority) {
       case "low":
         return "low";
@@ -82,6 +107,8 @@ const AlertCard: React.FC<AlertCardProps> = ({ notification, onUpdate }) => {
 
   // Handle marking notification as read
   const handleMarkAsRead = async () => {
+    if (!_id) return;
+
     try {
       await markNotificationAsRead(_id);
       if (onUpdate) {
@@ -135,13 +162,13 @@ const AlertCard: React.FC<AlertCardProps> = ({ notification, onUpdate }) => {
 
           <CardContent className="p-3 sm:p-4 pt-0 sm:pt-1 border-t">
             <div className="flex flex-col sm:flex-row gap-2">
-              {notification.data && (
+              {notification?.data && (
                 <Button size="sm" className="sm:flex-1">
                   <Info className="h-4 w-4 mr-2" />
                   View Details
                 </Button>
               )}
-              {!read && (
+              {!read && _id && (
                 <Button
                   size="sm"
                   variant="outline"
