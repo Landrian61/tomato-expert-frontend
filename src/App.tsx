@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppProvider } from "./context/AppContext";
 import { AuthProvider } from "./context/AuthContext";
+import { NotificationProvider } from "./context/NotificationContext";
 import Index from "./pages/Dashboard";
 import Diagnosis from "./pages/Diagnosis";
 import Alerts from "./pages/Alerts";
@@ -24,27 +25,29 @@ const App = () => (
     <BrowserRouter>
       <AppProvider>
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
+          <NotificationProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/verify-email" element={<VerifyEmail />} />
 
-              {/* Protected routes that require authentication */}
-              <Route element={<ProtectedRoute />}>
-                <Route path="/dashboard" element={<Index />} />
-                <Route path="/diagnosis" element={<Diagnosis />} />
-                <Route path="/diagnosis/:id" element={<DiagnosisDetail />} />
-                <Route path="/alerts" element={<Alerts />} />
-                <Route path="/profile" element={<Profile />} />
-              </Route>
+                {/* Protected routes that require authentication */}
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/dashboard" element={<Index />} />
+                  <Route path="/diagnosis" element={<Diagnosis />} />
+                  <Route path="/diagnosis/:id" element={<DiagnosisDetail />} />
+                  <Route path="/alerts" element={<Alerts />} />
+                  <Route path="/profile" element={<Profile />} />
+                </Route>
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </TooltipProvider>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </TooltipProvider>
+          </NotificationProvider>
         </AuthProvider>
       </AppProvider>
     </BrowserRouter>

@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Sun, Moon, LogOut } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
@@ -12,6 +11,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import NotificationBell from "@/components/notifications/NotificationBell";
 
 interface HeaderProps {
   title: string;
@@ -39,12 +39,18 @@ const Header: React.FC<HeaderProps> = ({ title }) => {
       <div className="flex items-center">
         <div className="flex items-center space-x-2">
           <div className="w-8 h-8 flex items-center justify-center">
-            <img src="/tomato.svg" alt="Tomato Expert Logo" className="w-6 h-6" />
+            <img
+              src="/tomato.svg"
+              alt="Tomato Expert Logo"
+              className="w-6 h-6"
+            />
           </div>
           <h1 className="text-xl font-bold">{title}</h1>
         </div>
       </div>
       <div className="flex items-center space-x-2">
+        <NotificationBell />
+
         <Button variant="ghost" size="icon" onClick={toggleTheme}>
           {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
           <span className="sr-only">Toggle theme</span>
