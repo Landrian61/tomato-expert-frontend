@@ -10,13 +10,15 @@ import {
   getCurrentUser,
   isAuthenticated,
   logout,
-  UserData
+  UserData,
+  clearAuthFromIDB
 } from "../services/authService";
 
 interface AuthContextType {
   user: UserData | null;
   loading: boolean;
   isAuthenticated: boolean;
+  isOffline: boolean;
   logout: () => Promise<void>;
   setUser: (user: UserData | null) => void;
 }
@@ -27,7 +29,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const navigate = useNavigate();
+
+  // Monitor online/offline status
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
+    return () => {
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
+    };
+  }, []);
 
   // Check authentication status on mount
   useEffect(() => {
@@ -53,7 +70,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Logout function
   const handleLogout = async () => {
     try {
-      await logout();
+      if (navigator.onLine) {
+        await logout();
+      } else {
+        // Handle offline logout
+        console.log("Offline logout - clearing local data only");
+        localStorage.removeItem("authData");
+        await clearAuthFromIDB();
+      }
       setUser(null);
       setAuthenticated(false);
       navigate("/login");
@@ -67,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     isAuthenticated: authenticated,
+    isOffline,
     logout: handleLogout,
     setUser: (newUser: UserData | null) => {
       setUser(newUser);
