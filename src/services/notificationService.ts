@@ -218,11 +218,19 @@ export const requestTestTip = async (): Promise<{ message: string }> => {
 
 export async function getNotificationSettings(): Promise<NotificationSettings> {
   try {
-    const response = await axios.get(`${API_URL}/notifications/settings`, getAuthHeader());
+    const response = await axios.get(`${API_URL}/user/notification-settings`, getAuthHeader());
     return response.data;
   } catch (error) {
     console.error('Error fetching notification settings:', error);
-    throw error;
+    // Return default settings on error
+    return {
+      enablePush: false,
+      enableEmail: true,
+      weatherAlerts: true,
+      blightRiskAlerts: true,
+      farmingTips: true,
+      diagnosisResults: true
+    };
   }
 }
 
@@ -232,13 +240,21 @@ export async function getAppPermissions(): Promise<AppPermissions> {
     return response.data;
   } catch (error) {
     console.error('Error fetching app permissions:', error);
-    throw error;
+    // Return default permissions on error
+    return {
+      camera: false,
+      location: false,
+      notifications: false,
+      dataSync: true,
+      analytics: true,
+      offline: false
+    };
   }
 }
 
 export async function updateAppPermissions(permissions: Partial<AppPermissions>): Promise<void> {
   try {
-    await axios.patch(`${API_URL}/user/permissions`, permissions, getAuthHeader());
+    await axios.put(`${API_URL}/user/permissions`, permissions, getAuthHeader());
   } catch (error) {
     console.error('Error updating app permissions:', error);
     throw error;

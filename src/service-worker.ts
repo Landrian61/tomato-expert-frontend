@@ -126,3 +126,76 @@ self.addEventListener('message', (event) => {
     (self as unknown as ServiceWorkerGlobalScope).skipWaiting();
   }
 });
+
+// Handle push events for push notifications
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+  
+  try {
+    const data = event.data.json();
+    const title = data.notification?.title || 'Tomato Expert';
+    const options = {
+      body: data.notification?.body || 'You have a new notification',
+      icon: '/android-chrome-192x192.png',
+      badge: '/favicon.ico',
+      data: data.data || {},
+      actions: [
+        {
+          action: 'view',
+          title: 'View Details'
+        }
+      ],
+      vibrate: [200, 100, 200],
+      tag: data.data?.notificationId || 'general',
+      renotify: true
+    };
+
+    event.waitUntil(
+      (self as unknown as ServiceWorkerGlobalScope).registration.showNotification(title, options)
+    );
+  } catch (err) {
+    console.error('Error showing notification:', err);
+  }
+});
+
+// Handle notification click events
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+
+  // Extract data from the notification
+  const notificationData = event.notification.data;
+  let url = '/';
+
+  // Determine URL based on notification type
+  if (notificationData.type === 'diagnosis') {
+    url = `/diagnosis/${notificationData.diagnosisId || ''}`;
+  } else if (notificationData.type === 'weather' || notificationData.type === 'blight') {
+    url = '/insights';
+  } else if (notificationData.type === 'tip') {
+    url = '/tips';
+  }
+
+  // If action is view, handle view action
+  if (event.action === 'view' && notificationData.url) {
+    url = notificationData.url;
+  }
+
+  // Open the appropriate URL
+  event.waitUntil(
+    (self as unknown as ServiceWorkerGlobalScope).clients.matchAll({ 
+      type: 'window',
+      includeUncontrolled: true
+    }).then((clientList) => {
+      // If a window client is already open, focus it and navigate
+      for (const client of clientList) {
+        if ('focus' in client && 'navigate' in client) {
+          return client.focus().then((focusedClient) => focusedClient.navigate(url));
+        }
+      }
+      // If no window client is open, open a new one
+      if ((self as unknown as ServiceWorkerGlobalScope).clients.openWindow) {
+        return (self as unknown as ServiceWorkerGlobalScope).clients.openWindow(url);
+      }
+    })
+  );
+});

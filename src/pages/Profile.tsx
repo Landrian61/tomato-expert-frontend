@@ -10,10 +10,9 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 import { getUserProfile } from "@/services/authService";
 import { uploadProfileImage } from "@/services/imageService";
-import NotificationSettings from "@/components/profile/NotificationSettings";
-import AppSettings from "@/components/profile/AppSettings";
 import LocationUpdate from "@/components/profile/LocationUpdate";
 import { refreshEnvironmentalData } from "@/services/environmentalDataService";
+import PushNotificationToggle from "@/components/notifications/PushNotificationToggle";
 
 const Profile = () => {
   const { user, setUser } = useAuth();
@@ -181,8 +180,15 @@ const Profile = () => {
         {/* Farm Location Update */}
         <LocationUpdate onLocationUpdated={handleLocationUpdated} />
 
-        <NotificationSettings />
-        <AppSettings />
+        {/* Push Notification Toggle */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Notification Preferences</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PushNotificationToggle className="w-full" />
+          </CardContent>
+        </Card>
 
         <div className="flex justify-center pt-4 pb-10">
           <Button
