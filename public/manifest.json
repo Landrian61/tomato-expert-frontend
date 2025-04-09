@@ -6,7 +6,7 @@
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#F2FCE2",
-  "theme_color": "#e63946",
+  "theme_color": "#1f3c26",
   "categories": ["agriculture", "productivity", "utility"],
   "icons": [
     {
