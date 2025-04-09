@@ -46,7 +46,30 @@ const AppSettings: React.FC = () => {
       setIsLoading(true);
       const updatedPermissions = { ...permissions, [key]: value };
       setPermissions(updatedPermissions);
-      await updateAppPermissions({ [key]: value });
+
+      // Special handling for offline mode
+      if (key === "offline") {
+        // Store offline preference in localStorage for immediate effect
+        localStorage.setItem("offlineMode", String(value));
+
+        // Only try API call if we're online
+        if (navigator.onLine) {
+          await updateAppPermissions({ [key]: value });
+        } else {
+          toast.info("Setting will sync when you're back online");
+        }
+      } else {
+        // Normal API call for other permissions
+        if (navigator.onLine) {
+          await updateAppPermissions({ [key]: value });
+        } else {
+          toast.warning("Can't update setting while offline");
+          // Revert the change
+          setPermissions(permissions);
+          return;
+        }
+      }
+
       toast.success("App permissions updated");
     } catch (error) {
       console.error("Failed to update app permissions:", error);
@@ -241,9 +264,15 @@ const AppSettings: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-between">
-            <Label htmlFor="offline" className="cursor-pointer">
-              Offline Mode
-            </Label>
+            <div>
+              <Label htmlFor="offline" className="cursor-pointer">
+                Offline Mode
+              </Label>
+              <p className="text-xs text-muted-foreground mt-1">
+                Enable to use app with limited features when offline. Data will
+                sync when you reconnect.
+              </p>
+            </div>
             <Switch
               id="offline"
               checked={permissions.offline}

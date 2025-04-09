@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { ArrowLeft, EyeIcon, EyeOffIcon } from "lucide-react";
 import { login } from "@/services/authService";
@@ -21,6 +22,7 @@ const Login = () => {
   const { setUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -31,7 +33,11 @@ const Login = () => {
     setError("");
 
     try {
-      const response = await login({ email, password });
+      const response = await login({
+        email,
+        password,
+        rememberMe
+      });
 
       if (response.accessToken) {
         // Set the user in the auth context
@@ -139,6 +145,21 @@ const Login = () => {
                     )}
                   </button>
                 </div>
+              </div>
+
+              {/* Add Remember Me checkbox */}
+              <div className="flex items-center space-x-2 mt-2">
+                <Checkbox
+                  id="rememberMe"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked === true)}
+                />
+                <Label
+                  htmlFor="rememberMe"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Remember me
+                </Label>
               </div>
 
               {error && <div className="text-red-500 text-sm">{error}</div>}

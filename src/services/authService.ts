@@ -15,6 +15,7 @@ export interface UserData {
   lastName: string;
   email: string;
   profilePhoto: string;
+  rememberMe?: boolean;
 }
 
 export interface AuthResponse {
@@ -102,9 +103,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// This is a partial update to be applied to the authService.ts file
-// Specifically targeting the response interceptor for token refresh
-
 // Response interceptor for token refresh
 api.interceptors.response.use(
   (response) => response,
@@ -181,6 +179,15 @@ const refreshToken = async () => {
       
       if (authData) {
         authData.accessToken = response.data.accessToken;
+        // Also update user info if provided by the server
+        if (response.data.user) {
+          authData.user = response.data.user;
+          // Update remember me preference if present
+          if (typeof response.data.user.rememberMe === 'boolean') {
+            authData.rememberMe = response.data.user.rememberMe;
+          }
+        }
+        // Store the updated data
         localStorage.setItem('authData', JSON.stringify(authData));
         await saveAuthToIDB(authData);
       }
@@ -191,8 +198,30 @@ const refreshToken = async () => {
     return { accessToken: null };
   } catch (error) {
     console.error('Token refresh failed:', error);
-    // For 403 errors, we'll just return null token but not force logout
-    return { accessToken: null };
+    
+    // Check if it's a network error (likely offline)
+    if (error.message?.includes('Network Error') || !navigator.onLine) {
+      console.warn('Network error during token refresh. Device may be offline.');
+      
+      // When offline, try to extend token life locally for PWA functionality
+      const authData = JSON.parse(localStorage.getItem('authData') || 'null') || await getAuthFromIDB();
+      if (authData?.accessToken) {
+        // Instead of failing, return the current token when offline
+        // This allows the PWA to continue functioning in offline mode
+        return { 
+          accessToken: authData.accessToken,
+          user: authData.user,
+          offlineMode: true 
+        };
+      }
+    }
+    
+    // For 403 errors (forbidden/expired), we'll return null token but not force logout
+    // For other errors, also return null but log the specific error
+    return { 
+      accessToken: null,
+      offlineMode: !navigator.onLine 
+    };
   }
 };
 
@@ -224,7 +253,11 @@ const resendVerification = async (email: string) => {
   }
 };
 
-const login = async (credentials: { email: string; password: string }) => {
+const login = async (credentials: { 
+  email: string; 
+  password: string; 
+  rememberMe?: boolean 
+}) => {
   try {
     const response = await api.post<AuthResponse>('/login', credentials);
     
@@ -232,6 +265,7 @@ const login = async (credentials: { email: string; password: string }) => {
       const authData = {
         accessToken: response.data.accessToken,
         user: response.data.user,
+        rememberMe: credentials.rememberMe || false,
       };
       
       // Save to both localStorage and IndexedDB
@@ -244,7 +278,6 @@ const login = async (credentials: { email: string; password: string }) => {
     throw error;
   }
 };
-
 
 const logout = async () => {
   try {
@@ -326,5 +359,6 @@ export {
   getUserProfile,
   updateUserPhoto,
   isAuthenticated,
-  api
+  api,
+  clearAuthFromIDB  // Add this export
 };

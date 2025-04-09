@@ -2,9 +2,11 @@ import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { WifiOff } from "lucide-react";
 
 const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, isOffline } = useAuth();
 
   // Show loading state while checking authentication
   if (loading) {
@@ -28,8 +30,20 @@ const ProtectedRoute: React.FC = () => {
     return <Navigate to="/login" replace />;
   }
 
-  // If authenticated, render the child routes
-  return <Outlet />;
+  // If authenticated, render the child routes with offline banner if needed
+  return (
+    <>
+      {isOffline && (
+        <Alert variant="destructive" className="mb-4 border-amber-500 bg-amber-50">
+          <WifiOff className="h-4 w-4 mr-2" />
+          <AlertDescription>
+            You're currently offline. Some features may be limited.
+          </AlertDescription>
+        </Alert>
+      )}
+      <Outlet />
+    </>
+  );
 };
 
 export default ProtectedRoute;
