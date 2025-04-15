@@ -73,32 +73,6 @@ const Sidebar: React.FC = () => {
         </div>
       </nav>
 
-      {/* Alert section */}
-      <div className="p-4">
-        <div className="rounded-lg bg-sidebar-accent/10 p-3 border border-sidebar-border">
-          <div className="flex items-center">
-            <div className="flex-shrink-0">
-              <AlertTriangle className="h-5 w-5 text-warning" />
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-sidebar-foreground">
-                Risk Alert
-              </h3>
-              <p className="text-xs mt-1 text-sidebar-foreground/80">
-                Early blight risk increased by 15%
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-2 w-full text-xs border-sidebar-border text-sidebar-foreground bg-sidebar-accent/10 hover:bg-sidebar-accent/20"
-              >
-                View Details
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Logout button */}
       <div className="p-4 mt-auto">
         <Button

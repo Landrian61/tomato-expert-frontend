@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Bell, BellOff, Loader2 } from "lucide-react";
+import { Bell, BellOff, Loader2, RefreshCw } from "lucide-react";
 import { useNotifications } from "@/context/NotificationContext";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -12,6 +12,7 @@ import {
   CardTitle
 } from "@/components/ui/card";
 import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface PushNotificationToggleProps {
   className?: string;
@@ -52,21 +53,50 @@ const PushNotificationToggle: React.FC<PushNotificationToggleProps> = ({
             toast.error(
               "Permission denied. You need to allow notifications in your browser settings."
             );
+            setLoading(false);
             return; // Don't update isChecked state
           }
         }
 
         // Subscribe to push notifications
         console.log("Subscribing to push notifications...");
-        const subscribed = await subscribeToPush();
+        try {
+          const subscribed = await subscribeToPush();
 
-        if (subscribed) {
-          setIsChecked(true);
-          toast.success("Push notifications enabled successfully");
-        } else {
-          // If permission is granted but subscription failed
-          toast.error("Failed to enable push notifications. Please try again.");
-          return; // Don't update isChecked state
+          if (subscribed) {
+            setIsChecked(true);
+            toast.success("Push notifications enabled successfully");
+          } else {
+            console.error(
+              "Subscription returned false but no error was thrown"
+            );
+            toast.error(
+              "Failed to enable push notifications. Please try refreshing the page."
+            );
+            setLoading(false);
+            return; // Don't update isChecked state
+          }
+        } catch (subError: any) {
+          console.error("Subscription error:", subError);
+          let errorMessage = "Failed to enable push notifications.";
+
+          if (subError.message) {
+            if (subError.message.includes("messaging/permission-blocked")) {
+              errorMessage =
+                "Notification permission was denied in your browser.";
+            } else if (
+              subError.message.includes("messaging/token-subscribe-failed")
+            ) {
+              errorMessage =
+                "Failed to subscribe. Please try refreshing the page.";
+            } else {
+              errorMessage += " " + subError.message;
+            }
+          }
+
+          toast.error(errorMessage);
+          setLoading(false);
+          return;
         }
       } else {
         // Unsubscribe from push notifications
@@ -160,6 +190,17 @@ const PushNotificationToggle: React.FC<PushNotificationToggleProps> = ({
             />
           )}
         </div>
+
+        {!isChecked && !loading && (
+          <Alert className="mt-4">
+            <RefreshCw className="h-4 w-4" />
+            <AlertTitle>Tip</AlertTitle>
+            <AlertDescription>
+              If you experience any issues enabling notifications, try
+              refreshing your browser.
+            </AlertDescription>
+          </Alert>
+        )}
       </CardContent>
       {pushPermission === "denied" && (
         <CardFooter>

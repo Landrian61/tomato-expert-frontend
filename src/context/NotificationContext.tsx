@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import {
   getNotifications,
-  Notification,
+  type Notification,
   markNotificationAsRead,
   markAllNotificationsAsRead,
   NotificationResponse
@@ -20,6 +20,7 @@ import {
   subscribeToPushNotifications,
   unsubscribeFromPushNotifications
 } from "@/services/pushNotificationService";
+import { onMessageListener } from "@/services/firebaseService";
 
 interface NotificationContextType {
   notifications: Notification[];
@@ -62,36 +63,103 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   const [pushSupported, setPushSupported] = useState<boolean>(false);
   const [pushPermission, setPushPermission] =
     useState<NotificationPermission>("default");
-  const [serviceWorkerRegistration, setServiceWorkerRegistration] =
-    useState<ServiceWorkerRegistration | null>(null);
 
   // Initialize push notification support
   useEffect(() => {
-    const supported = isPushSupported();
-    setPushSupported(supported);
+    const checkPushSupport = async () => {
+      const supported = await isPushSupported();
+      setPushSupported(supported);
 
-    if (supported) {
-      // Get current permission status
-      const permission = getNotificationPermission();
-      setPushPermission(permission);
+      if (supported) {
+        // Get current permission status
+        const permission = getNotificationPermission();
+        setPushPermission(permission);
 
-      // Register service worker
-      const registerSW = async () => {
+        // Register service worker
         try {
-          const registration = await registerServiceWorker();
-          setServiceWorkerRegistration(registration);
+          await registerServiceWorker();
 
           // If permission is already granted, try to subscribe
-          if (permission === "granted" && localStorage.getItem("token")) {
+          if (
+            permission === "granted" &&
+            (localStorage.getItem("token") || localStorage.getItem("authData"))
+          ) {
             await subscribeToPushNotifications();
+
+            // Set up foreground message handler with improved notification handling
+            onMessageListener((payload) => {
+              console.log("Received foreground message:", payload);
+
+              // Always refresh notifications list
+              fetchNotifications();
+
+              // Show a local browser notification for every message received
+              if (Notification.permission === "granted") {
+                try {
+                  const title = payload.notification?.title || "Tomato Expert";
+                  const options = {
+                    body:
+                      payload.notification?.body ||
+                      "You have a new notification",
+                    icon: "/android-chrome-192x192.png",
+                    badge: "/favicon.ico",
+                    data: payload.data || {},
+                    tag: payload.data?.notificationId || "general",
+                    renotify: true,
+                    vibrate: [200, 100, 200],
+                    actions:
+                      payload.data?.action === "diagnose"
+                        ? [
+                            {
+                              action: "diagnose",
+                              title: "Diagnose Now"
+                            }
+                          ]
+                        : undefined
+                  };
+
+                  // Create and show the notification
+                  const notification = new Notification(title, options);
+
+                  // Add click handler to the notification
+                  notification.onclick = (event) => {
+                    // Focus the window and navigate as needed
+                    window.focus();
+
+                    // Special handling for blight risk notifications
+                    if (payload.data?.type === "blight") {
+                      window.location.href = "/diagnosis";
+                      return;
+                    }
+
+                    // Handle other notification click logic
+                    if (payload.data?.action === "diagnose") {
+                      window.location.href = "/diagnosis";
+                    } else if (payload.data?.type === "diagnosis") {
+                      window.location.href = `/diagnosis/${
+                        payload.data.diagnosisId || ""
+                      }`;
+                    } else if (payload.data?.type === "weather") {
+                      window.location.href = "/insights";
+                    } else if (payload.data?.type === "tip") {
+                      window.location.href = "/tips";
+                    } else if (payload.data?.url) {
+                      window.location.href = payload.data.url;
+                    }
+                  };
+                } catch (error) {
+                  console.error("Error showing local notification:", error);
+                }
+              }
+            });
           }
         } catch (error) {
-          console.error("Error registering service worker:", error);
+          console.error("Error initializing push notifications:", error);
         }
-      };
+      }
+    };
 
-      registerSW();
-    }
+    checkPushSupport();
   }, []);
 
   const fetchNotifications = async () => {
@@ -158,8 +226,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     if (!pushSupported || pushPermission !== "granted") return false;
 
     try {
-      const subscription = await subscribeToPushNotifications();
-      return !!subscription;
+      const token = await subscribeToPushNotifications();
+      return !!token;
     } catch (error) {
       console.error("Error subscribing to push notifications:", error);
       return false;

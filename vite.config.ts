@@ -32,6 +32,8 @@ export default defineConfig(({ mode }) => ({
         description: 'Advanced tomato plant disease detection and management for farmers',
         theme_color: '#1f3c26',
         start_url: '/',
+        // Use type assertion to avoid TypeScript error
+        ...(({ gcm_sender_id: "4382717475" }) as any),
         icons: [
           {
             src: '/android-chrome-192x192.png',
