@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getFCMToken, isFCMSupported } from './firebaseService';
 
 // Base API URL - matching the pattern from notificationService.ts
 const API_URL = import.meta.env.DEV 
@@ -39,8 +40,8 @@ const getAuthHeader = () => {
 /**
  * Check if Push API is supported in the browser
  */
-export const isPushSupported = (): boolean => {
-  return 'serviceWorker' in navigator && 'PushManager' in window;
+export const isPushSupported = async (): Promise<boolean> => {
+  return await isFCMSupported();
 };
 
 /**
@@ -48,7 +49,7 @@ export const isPushSupported = (): boolean => {
  * @returns Promise with the permission status
  */
 export const requestNotificationPermission = async (): Promise<NotificationPermission> => {
-  if (!isPushSupported()) {
+  if (!(await isPushSupported())) {
     throw new Error('Push notifications are not supported in this browser');
   }
   
@@ -59,10 +60,6 @@ export const requestNotificationPermission = async (): Promise<NotificationPermi
  * Get current push notification permission status
  */
 export const getNotificationPermission = (): NotificationPermission => {
-  if (!isPushSupported()) {
-    return 'denied';
-  }
-  
   return Notification.permission;
 };
 
@@ -70,25 +67,23 @@ export const getNotificationPermission = (): NotificationPermission => {
  * Register service worker for push notifications
  */
 export const registerServiceWorker = async (): Promise<ServiceWorkerRegistration> => {
-  if (!isPushSupported()) {
+  if (!(await isPushSupported())) {
     throw new Error('Service workers are not supported in this browser');
   }
   
   try {
-    // Check if service worker is already registered and active
-    if (navigator.serviceWorker.controller) {
-      const registration = await navigator.serviceWorker.ready;
-      return registration;
-    }
-    
-    // Otherwise register a new service worker
-    const registration = await navigator.serviceWorker.register('/service-worker.js');
+    // Register Firebase messaging service worker
+    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    console.log('Service worker registered successfully', registration);
     
     // Wait for the service worker to be ready
     if (registration.installing) {
+      console.log('Service worker installing');
       await new Promise<void>((resolve) => {
         registration.installing?.addEventListener('statechange', (e) => {
+          console.log('Service worker state change:', (e.target as ServiceWorker).state);
           if ((e.target as ServiceWorker).state === 'activated') {
+            console.log('Service worker activated');
             resolve();
           }
         });
@@ -104,51 +99,37 @@ export const registerServiceWorker = async (): Promise<ServiceWorkerRegistration
 
 /**
  * Subscribe to push notifications
- * @returns Promise with the push subscription
+ * @returns Promise with the FCM token
  */
-export const subscribeToPushNotifications = async (): Promise<PushSubscription | null> => {
+export const subscribeToPushNotifications = async (): Promise<string | null> => {
   try {
-    const registration = await navigator.serviceWorker.ready;
+    console.log('Subscribing to push notifications...');
     
-    // Get VAPID public key from backend
-    const response = await axios.get(`${API_URL}/notifications/vapid-key`);
-    const { vapidPublicKey } = response.data;
+    // Register service worker first
+    await registerServiceWorker();
     
-    if (!vapidPublicKey) {
-      console.error('No VAPID public key returned from server');
+    // Get FCM token
+    const token = await getFCMToken();
+    console.log('FCM token obtained:', token);
+    
+    if (!token) {
+      console.error('No FCM token available');
       return null;
     }
     
-    // Check for an existing subscription
-    let subscription = await registration.pushManager.getSubscription();
+    // Send token to the server
+    console.log('Sending FCM token to server...');
+    await axios.post(
+      `${API_URL}/notifications/register-device`,
+      { deviceToken: token },
+      getAuthHeader()
+    );
+    console.log('FCM token sent to server');
     
-    // Unsubscribe from any existing subscription to ensure a clean state
-    if (subscription) {
-      await subscription.unsubscribe();
-    }
-    
-    // Create a new subscription
-    try {
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
-      });
-      
-      // Send the subscription to the server
-      await axios.post(
-        `${API_URL}/notifications/register-device`,
-        { deviceToken: JSON.stringify(subscription) },
-        getAuthHeader()
-      );
-      
-      return subscription;
-    } catch (error) {
-      console.error('Error creating push subscription:', error);
-      return null;
-    }
+    return token;
   } catch (error) {
     console.error('Error in subscribeToPushNotifications:', error);
-    return null;
+    throw error; // Re-throw the error to be handled by the caller
   }
 };
 
@@ -157,74 +138,35 @@ export const subscribeToPushNotifications = async (): Promise<PushSubscription |
  */
 export const unsubscribeFromPushNotifications = async (): Promise<boolean> => {
   try {
-    const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.getSubscription();
+    const token = localStorage.getItem('fcmToken');
     
-    if (!subscription) {
+    if (!token) {
       // Already unsubscribed
       return true;
     }
     
+    // Notify the server
     try {
-      // Store the endpoint before unsubscribing
-      const endpoint = subscription.endpoint;
-      const subscriptionJson = JSON.stringify(subscription);
-      
-      // Unsubscribe first to avoid the message channel closing error
-      const success = await subscription.unsubscribe();
-      
-      if (success) {
-        // Then notify the server
-        try {
-          await axios.delete(
-            `${API_URL}/notifications/unregister-device`,
-            { 
-              headers: { 
-                ...getAuthHeader().headers 
-              },
-              data: { deviceToken: subscriptionJson }
-            }
-          );
-        } catch (serverError) {
-          console.error('Error notifying server about unsubscription:', serverError);
-          // Continue anyway since we've already unsubscribed locally
+      await axios.delete(
+        `${API_URL}/notifications/unregister-device`,
+        { 
+          headers: { 
+            ...getAuthHeader().headers 
+          },
+          data: { deviceToken: token }
         }
-      }
-      
-      return success;
-    } catch (unsubError) {
-      console.error('Error during unsubscribe operation:', unsubError);
-      
-      // If we get a "message channel closed" error, consider it a success
-      // This is a known issue with some browsers
-      if (unsubError.message?.includes('message channel closed')) {
-        return true;
-      }
-      
-      return false;
+      );
+    } catch (serverError) {
+      console.error('Error notifying server about unsubscription:', serverError);
+      // Continue anyway since we'll still delete the token locally
     }
+    
+    // Remove token from local storage
+    localStorage.removeItem('fcmToken');
+    
+    return true;
   } catch (error) {
     console.error('Error in unsubscribeFromPushNotifications:', error);
-    return false;
+    throw error;
   }
 };
-
-/**
- * Convert base64 to Uint8Array
- * (required for applicationServerKey)
- */
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding)
-    .replace(/-/g, '+')
-    .replace(/_/g, '/');
-  
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  
-  return outputArray;
-} 
