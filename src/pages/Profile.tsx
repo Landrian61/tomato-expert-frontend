@@ -1,18 +1,33 @@
 import React, { useState, useEffect } from "react";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Save } from "lucide-react";
+import { Camera, Save, AlertTriangle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
-import { getUserProfile } from "@/services/authService";
+import { getUserProfile, deleteAccount } from "@/services/authService";
 import { uploadProfileImage } from "@/services/imageService";
 import LocationUpdate from "@/components/profile/LocationUpdate";
 import { refreshEnvironmentalData } from "@/services/environmentalDataService";
 import PushNotificationToggle from "@/components/notifications/PushNotificationToggle";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
   const { user, setUser } = useAuth();
@@ -22,6 +37,12 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirmText, setConfirmText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   // Load user profile data
   useEffect(() => {
@@ -95,6 +116,30 @@ const Profile = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (confirmText !== "DELETE") {
+      setDeleteError("Please type DELETE to confirm");
+      return;
+    }
+
+    setIsDeleting(true);
+    setDeleteError("");
+
+    try {
+      await deleteAccount(password);
+      toast.success("Your account has been deleted successfully");
+      setShowDeleteDialog(false);
+      navigate("/login");
+    } catch (error: any) {
+      setDeleteError(
+        error.response?.data?.message ||
+          "Failed to delete account. Please try again."
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // Generate avatar fallback from user initials
   const getAvatarFallback = () => {
     if (firstName && lastName) {
@@ -104,7 +149,7 @@ const Profile = () => {
   };
 
   return (
-    <Layout title="My Profile & Preferences">
+    <Layout title="My Profile">
       <div className="space-y-6 max-w-4xl mx-auto">
         <Card>
           <CardHeader>
@@ -190,6 +235,39 @@ const Profile = () => {
           </CardContent>
         </Card>
 
+        {/* Danger Zone - Account Settings */}
+        <Card className="border-red-200 bg-red-50/30 dark:bg-red-900/10">
+          <CardHeader>
+            <CardTitle className="text-red-600 flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Danger Zone
+            </CardTitle>
+            <CardDescription className="text-red-600/80">
+              Actions here can't be undone. Please proceed with caution.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="rounded-lg border border-red-200 p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <h3 className="text-base font-medium">Delete your account</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Permanently delete your account and all of your data
+                  </p>
+                </div>
+                <Button
+                  variant="destructive"
+                  className="sm:w-auto w-full"
+                  onClick={() => setShowDeleteDialog(true)}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Account
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="flex justify-center pt-4 pb-10">
           <Button
             size="lg"
@@ -211,6 +289,99 @@ const Profile = () => {
           </Button>
         </div>
       </div>
+
+      {/* Delete Account Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Delete Account</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. This will permanently delete your
+              account and all associated data.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-left">
+                Enter your password to confirm
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Your current password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirm" className="text-left">
+                Type <span className="font-bold">DELETE</span> to confirm
+              </Label>
+              <Input
+                id="confirm"
+                placeholder="DELETE"
+                value={confirmText}
+                onChange={(e) => setConfirmText(e.target.value)}
+              />
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-md p-3">
+              <div className="flex items-start">
+                <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5 mr-2 flex-shrink-0" />
+                <div className="text-sm text-amber-800">
+                  <p className="font-medium">Warning:</p>
+                  <ul className="list-disc pl-5 mt-1">
+                    <li>All your personal information will be deleted</li>
+                    <li>All your diagnosis history will be removed</li>
+                    <li>
+                      All environmental data collected for your locations will
+                      be deleted
+                    </li>
+                    <li>You will no longer receive alerts or notifications</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {deleteError && (
+              <p className="text-sm text-red-600">{deleteError}</p>
+            )}
+          </div>
+
+          <DialogFooter className="sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteDialog(false);
+                setPassword("");
+                setConfirmText("");
+                setDeleteError("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={isDeleting || !password || confirmText !== "DELETE"}
+            >
+              {isDeleting ? (
+                <>
+                  <span className="mr-2 h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Account
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
