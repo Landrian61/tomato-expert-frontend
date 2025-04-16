@@ -348,6 +348,47 @@ const isAuthenticated = async () => {
   return Boolean(authData?.accessToken);
 };
 
+const forgotPassword = async (email: string) => {
+  try {
+    const response = await api.post('/forgot-password', { email });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const verifyResetToken = async (email: string, code: string) => {
+  try {
+    const response = await api.post('/verify-reset-token', { email, code });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const resetPassword = async (email: string, code: string, newPassword: string) => {
+  try {
+    const response = await api.post('/reset-password', { email, code, newPassword });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const deleteAccount = async (password: string) => {
+  try {
+    const response = await api.post('/user/delete-account', { password });
+    
+    // Clear auth data upon successful deletion
+    localStorage.removeItem('authData');
+    await clearAuthFromIDB();
+    
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
 export {
   register,
   verifyEmail,
@@ -360,5 +401,9 @@ export {
   updateUserPhoto,
   isAuthenticated,
   api,
-  clearAuthFromIDB  // Add this export
+  clearAuthFromIDB,
+  forgotPassword,
+  verifyResetToken,
+  resetPassword,
+  deleteAccount
 };
