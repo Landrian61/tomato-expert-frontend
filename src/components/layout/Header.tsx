@@ -1,5 +1,6 @@
 import React from "react";
-import { Sun, Moon, LogOut } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Sun, Moon, LogOut, User } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -66,6 +67,12 @@ const Header: React.FC<HeaderProps> = ({ title }) => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link to="/profile" className="flex items-center cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
+                My Profile
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={handleLogout}
               className="text-tomato cursor-pointer"
