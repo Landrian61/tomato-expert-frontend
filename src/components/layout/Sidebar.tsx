@@ -6,7 +6,8 @@ import {
   AlertTriangle,
   LineChart,
   User,
-  LogOut
+  LogOut,
+  Home
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -15,8 +16,9 @@ import { useAuth } from "@/context/AuthContext";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const navigation = [
-  { name: "Field Overview", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Field Overview", href: "/dashboard", icon: Home },
   { name: "Plant Diagnosis", href: "/diagnosis", icon: Sprout },
+  { name: "Analytics & Insights", href: "/analytics", icon: LineChart },
   { name: "Risk Alerts", href: "/alerts", icon: AlertTriangle },
   { name: "My Profile", href: "/profile", icon: User }
 ];

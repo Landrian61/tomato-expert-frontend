@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { openDB } from 'idb';
+import { api } from './apiService'; // Update to import from central API service
 
 // Base API URL
 // In development, we use the local backend URL
@@ -67,101 +68,6 @@ const clearAuthFromIDB = async () => {
     console.error('Error clearing auth from IndexedDB:', error);
   }
 };
-
-// Configure axios instance with interceptors
-const api = axios.create({
-  baseURL: API_URL,
-  withCredentials: true, // Enable sending cookies in cross-origin requests
-});
-
-// Request interceptor for adding token
-api.interceptors.request.use(
-  async (config) => {
-    // Don't add auth header for refresh token or login/register endpoints
-    if (
-      config.url === '/refresh-token' ||
-      config.url === '/login' ||
-      config.url === '/register' ||
-      config.url === '/verify-email' ||
-      config.url === '/resend-verification'
-    ) {
-      return config;
-    }
-
-    // Try to get token from localStorage first, then IndexedDB
-    let authData = JSON.parse(localStorage.getItem('authData') || 'null');
-    if (!authData) {
-      authData = await getAuthFromIDB();
-    }
-
-    if (authData?.accessToken) {
-      config.headers.Authorization = `Bearer ${authData.accessToken}`;
-    }
-
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Response interceptor for token refresh
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    // Only attempt token refresh if we get a 401 error (Unauthorized) 
-    // and we haven't already tried refreshing for this request
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        console.log('Attempting to refresh token...');
-        const refreshResponse = await axios.post(
-          `${API_URL}/refresh-token`, 
-          {}, 
-          { withCredentials: true }
-        );
-        
-        if (refreshResponse.data.accessToken) {
-          // Update token in localStorage and IndexedDB
-          const authData = JSON.parse(localStorage.getItem('authData') || 'null') || await getAuthFromIDB();
-          if (authData) {
-            authData.accessToken = refreshResponse.data.accessToken;
-            localStorage.setItem('authData', JSON.stringify(authData));
-            await saveAuthToIDB(authData);
-          }
-          
-          // Update token in the original request and retry
-          originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.accessToken}`;
-          return api(originalRequest);
-        }
-      } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError);
-        
-        // If refresh fails due to invalid refresh token (403),
-        // proceed with limited functionality - don't force logout
-        if (refreshError.response?.status !== 403) {
-          // For other errors, logout the user
-          await logout();
-          // Allow the app to continue in a limited state
-          // Only redirect to login for serious auth issues
-          if (window.location.pathname.includes('/dashboard')) {
-            window.location.href = '/login';
-          }
-        }
-      }
-    }
-
-    // If the error is 403 on the refresh token endpoint, 
-    // continue without forcing a logout
-    if (error.config?.url === '/refresh-token' && error.response?.status === 403) {
-      console.warn('Refresh token expired or invalid. Limited functionality available.');
-      return Promise.reject(error);
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 // Updated refreshToken function
 const refreshToken = async () => {

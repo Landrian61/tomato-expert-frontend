@@ -7,12 +7,26 @@ import React, {
 } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  getCurrentUser,
   isAuthenticated,
   logout,
-  UserData,
-  clearAuthFromIDB
+  clearAuthFromIDB,
+  api
 } from "../services/authService";
+
+export interface UserData {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  profilePhoto: string;
+  defaultLocation?: {
+    latitude: number;
+    longitude: number;
+  };
+  farmName?: string;
+  district?: string;
+  // ...other user fields
+}
 
 interface AuthContextType {
   user: UserData | null;
@@ -83,6 +97,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
+    }
+  };
+
+  // Get current user function
+  const getCurrentUser = async () => {
+    try {
+      // First try to get user from localStorage
+      const authData = localStorage.getItem("authData");
+      if (authData) {
+        const parsedData = JSON.parse(authData);
+        if (parsedData.user) {
+          setUser(parsedData.user);
+          setAuthenticated(true);
+          return parsedData.user;
+        }
+      }
+
+      // If not available, try to get fresh user data
+      const userResponse = await api.get("/user");
+      if (userResponse.data) {
+        // Update local storage with fresh user data
+        if (authData) {
+          const parsedData = JSON.parse(authData);
+          parsedData.user = userResponse.data;
+          localStorage.setItem("authData", JSON.stringify(parsedData));
+        }
+
+        setUser(userResponse.data);
+        setAuthenticated(true);
+        return userResponse.data;
+      }
+
+      setUser(null);
+      setAuthenticated(false);
+      return null;
+    } catch (error) {
+      console.error("Error getting current user:", error);
+      setUser(null);
+      setAuthenticated(false);
+      return null;
     }
   };
 
