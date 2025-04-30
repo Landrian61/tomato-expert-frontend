@@ -26,13 +26,12 @@ import {
   Edit
 } from "lucide-react";
 import RiskGauge from "@/components/dashboard/RiskGauge";
-import CRITrendChart from "@/components/dashboard/CRITrendChart";
 import FarmerLocationMap from "@/components/analytics/FarmerLocationMap";
 import EnvironmentalTrendCharts from "@/components/analytics/EnvironmentalTrendCharts";
 import WeatherForecastSection from "@/components/analytics/WeatherForecastSection";
-import AnalyticsInsights from "@/components/analytics/AnalyticsInsights";
 import { refreshEnvironmentalData } from "@/services/environmentalDataService";
 import { FarmLocation, EnvironmentalData } from "@/types/location";
+import CRITrendChartCard from "@/components/dashboard/CRITrendChartCard";
 
 const Analytics: React.FC = () => {
   const { user } = useAuth();
@@ -73,7 +72,7 @@ const Analytics: React.FC = () => {
           location: {
             latitude: user.defaultLocation.latitude,
             longitude: user.defaultLocation.longitude,
-            district: user.district || "Unknown",
+            district: user.district || "",
             name: user.farmName || "My Farm"
           },
           isSelf: true,
@@ -189,7 +188,7 @@ const Analytics: React.FC = () => {
               location: {
                 latitude: userProfileResponse.data.defaultLocation.latitude,
                 longitude: userProfileResponse.data.defaultLocation.longitude,
-                district: userProfileResponse.data.district || "Unknown",
+                district: userProfileResponse.data.district || "",
                 name: userProfileResponse.data.farmName || "My Farm"
               },
               isSelf: true,
@@ -272,12 +271,8 @@ const Analytics: React.FC = () => {
   // Show location missing UI when we've explicitly verified no location exists
   if (locationMissing && !loading) {
     return (
-      <Layout title="Analytics & Insights">
+      <Layout title="Analytics">
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg sm:text-xl font-bold">Farm Analytics</h2>
-          </div>
-
           <Card className="border-warning">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
@@ -313,7 +308,7 @@ const Analytics: React.FC = () => {
   // Show general error message if data couldn't be loaded
   if (error && !loading && !locationMissing) {
     return (
-      <Layout title="Analytics & Insights">
+      <Layout title="Analytics">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-lg sm:text-xl font-bold">Farm Analytics</h2>
@@ -354,7 +349,7 @@ const Analytics: React.FC = () => {
   }
 
   return (
-    <Layout title="Analytics & Insights">
+    <Layout title="Analytics">
       <div className="space-y-4">
         {/* Header with refresh button */}
         <div className="flex justify-between items-center">
@@ -375,7 +370,7 @@ const Analytics: React.FC = () => {
 
         {/* Tabs navigation */}
         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-          <TabsList className="grid grid-cols-4 h-9 mb-4 w-full">
+          <TabsList className="grid grid-cols-3 h-9 mb-4 w-full">
             <TabsTrigger value="overview" className="text-xs">
               <MapPin className="h-3.5 w-3.5 mr-2" />
               <span>Overview</span>
@@ -387,10 +382,6 @@ const Analytics: React.FC = () => {
             <TabsTrigger value="forecast" className="text-xs">
               <Cloud className="h-3.5 w-3.5 mr-2" />
               <span>Forecast</span>
-            </TabsTrigger>
-            <TabsTrigger value="insights" className="text-xs">
-              <AlertTriangle className="h-3.5 w-3.5 mr-2" />
-              <span>Insights</span>
             </TabsTrigger>
           </TabsList>
 
@@ -478,7 +469,11 @@ const Analytics: React.FC = () => {
                 </div>
 
                 {/* Recent CRI trend */}
-                <CRITrendChart period="week" height={200} />
+                <CRITrendChartCard
+                  period="week"
+                  showTrend={true}
+                  title="Blight Risk Trend"
+                />
               </>
             )}
           </TabsContent>
@@ -491,14 +486,6 @@ const Analytics: React.FC = () => {
           {/* Forecast Tab */}
           <TabsContent value="forecast" className="space-y-4">
             <WeatherForecastSection />
-          </TabsContent>
-
-          {/* Insights Tab */}
-          <TabsContent value="insights" className="space-y-4">
-            <AnalyticsInsights
-              environmentalData={environmentalData}
-              farmerLocation={farmerLocation}
-            />
           </TabsContent>
         </Tabs>
       </div>

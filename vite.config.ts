@@ -57,7 +57,7 @@ export default defineConfig(({ mode }) => ({
         ]
       },
       devOptions: {
-        enabled: true,
+        enabled: false,
         type: 'module',
         navigateFallback: 'index.html'
       }
@@ -67,5 +67,10 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  workbox: {
+    globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+    // Add this to generate revision info
+    inlineWorkboxRuntime: true 
   },
 }));

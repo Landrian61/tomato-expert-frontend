@@ -40,6 +40,7 @@ const MapSetup: React.FC<{ center: LatLngExpression; zoom: number }> = ({
 const UgandaBlightMap: React.FC = () => {
   const [farmLocations, setFarmLocations] = useState<FarmLocation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showMarkers, setShowMarkers] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({
     totalFarms: 0,
@@ -49,6 +50,16 @@ const UgandaBlightMap: React.FC = () => {
   });
 
   const mapCenter: LatLngExpression = [1.3733, 32.2903]; // Uganda center
+
+  // After map loads
+  useEffect(() => {
+    // Delay marker rendering to improve initial load time
+    const timer = setTimeout(() => {
+      setShowMarkers(true);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const fetchFarmLocations = async () => {
@@ -60,14 +71,15 @@ const UgandaBlightMap: React.FC = () => {
         const totalFarms = response.data.locations.length;
         const earlyBlightFarms = response.data.locations.filter(
           (farm: FarmLocation) =>
-            farm.environmentalData.blightType === "Early Blight"
+            farm.environmentalData?.blightType === "Early Blight"
         ).length;
         const lateBlightFarms = response.data.locations.filter(
           (farm: FarmLocation) =>
-            farm.environmentalData.blightType === "Late Blight"
+            farm.environmentalData?.blightType === "Late Blight"
         ).length;
         const highRiskFarms = response.data.locations.filter(
           (farm: FarmLocation) =>
+            farm.environmentalData &&
             ["High", "Critical"].includes(farm.environmentalData.riskLevel)
         ).length;
 
@@ -89,18 +101,20 @@ const UgandaBlightMap: React.FC = () => {
   }, []);
 
   const getMarkerColor = (data: FarmLocation["environmentalData"]) => {
-    const { riskLevel, blightType } = data;
+    if (!data) return "#CCCCCC"; // Default gray for missing data
+
+    const { blightType } = data;
 
     // Simplified color scheme that matches the legend
     if (blightType === "Early Blight") {
-      return "#FF8C00"; // Match the legend color for Early Blight
+      return "#FF8C00";
     }
 
     if (blightType === "Late Blight") {
-      return "#9370DB"; // Match the legend color for Late Blight
+      return "#9370DB";
     }
 
-    return "#32CD32"; // Healthy - match the legend color
+    return "#32CD32"; // Healthy
   };
 
   const getMarkerSize = (riskLevel: string) => {
@@ -171,40 +185,45 @@ const UgandaBlightMap: React.FC = () => {
       </CardHeader>
       <CardContent>
         <div className="w-full h-[500px] rounded-md overflow-hidden border">
-          <MapContainer style={{ height: "100%", width: "100%" }}>
-            <MapSetup center={mapCenter} zoom={7} />
+          <MapContainer
+            {...({ center: mapCenter, zoom: 7 } as any)}
+            style={{ height: "100%", width: "100%" }}
+          >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-            {farmLocations.map((farm) => {
-              const markerOptions: PathOptions = {
-                fillColor: getMarkerColor(farm.environmentalData),
-                color: "#fff",
-                weight: 1,
-                fillOpacity: 0.8,
-                radius: getMarkerSize(farm.environmentalData.riskLevel)
-              };
+            {showMarkers &&
+              farmLocations.map((farm) => {
+                const markerOptions: PathOptions = {
+                  fillColor: getMarkerColor(farm.environmentalData || null),
+                  color: "#fff",
+                  weight: 1,
+                  fillOpacity: 0.8,
+                  radius: getMarkerSize(
+                    farm.environmentalData?.riskLevel || "Low"
+                  )
+                };
 
-              return (
-                <CircleMarker
-                  key={farm.id}
-                  center={
-                    [
-                      farm.location.latitude,
-                      farm.location.longitude
-                    ] as LatLngExpression
-                  }
-                  pathOptions={markerOptions}
-                >
-                  <Tooltip>
-                    {farm.farmer.firstName} {farm.farmer.lastName}
-                    {farm.location.district
-                      ? ` - ${farm.location.district}`
-                      : ""}
-                    <br />
-                    {farm.environmentalData.blightType} (
-                    {farm.environmentalData.riskLevel} Risk)
-                  </Tooltip>
-                  <Popup>
+                return (
+                  <CircleMarker
+                    key={farm.id}
+                    center={
+                      [
+                        farm.location.latitude,
+                        farm.location.longitude
+                      ] as LatLngExpression
+                    }
+                    pathOptions={markerOptions}
+                  >
+                    <Tooltip>
+                      {farm.farmer.firstName} {farm.farmer.lastName}
+                      {farm.location.district
+                        ? ` - ${farm.location.district}`
+                        : ""}
+                      <br />
+                      {farm.environmentalData?.blightType || "Unknown"} (
+                      {farm.environmentalData?.riskLevel || "Unknown"} Risk)
+                    </Tooltip>
+                    <Popup>
                     <div className="p-1">
                       <h3 className="font-semibold">
                         {farm.farmer.firstName} {farm.farmer.lastName}
@@ -212,61 +231,63 @@ const UgandaBlightMap: React.FC = () => {
                       <p className="text-sm text-gray-600">
                         {farm.location.name}, {farm.location.district}
                       </p>
-
-                      <div className="mt-2 p-2 rounded bg-gray-50">
-                        <div className="flex items-center justify-between text-sm">
-                          <span
-                            className={`font-medium ${
-                              farm.environmentalData.riskLevel === "High" ||
-                              farm.environmentalData.riskLevel === "Critical"
-                                ? "text-red-600"
-                                : "text-amber-600"
-                            }`}
-                          >
-                            {farm.environmentalData.blightType}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded text-xs ${
-                              farm.environmentalData.riskLevel === "Critical"
-                                ? "bg-red-100 text-red-800"
-                                : farm.environmentalData.riskLevel === "High"
-                                ? "bg-orange-100 text-orange-800"
-                                : farm.environmentalData.riskLevel === "Medium"
-                                ? "bg-amber-100 text-amber-800"
-                                : "bg-green-100 text-green-800"
-                            }`}
-                          >
-                            {farm.environmentalData.riskLevel} Risk (CRI:{" "}
-                            {farm.environmentalData.cri.toFixed(1)})
-                          </span>
+                  
+                      {farm.environmentalData ? (
+                        <>
+                          <div className="mt-2 p-2 rounded bg-gray-50">
+                            <div className="flex items-center justify-between text-sm">
+                              <span className={`font-medium ${
+                                farm.environmentalData.riskLevel === "High" ||
+                                farm.environmentalData.riskLevel === "Critical"
+                                  ? "text-red-600"
+                                  : "text-amber-600"
+                              }`}>
+                                {farm.environmentalData.blightType}
+                              </span>
+                              <span className={`px-2 py-0.5 rounded text-xs ${
+                                farm.environmentalData.riskLevel === "Critical"
+                                  ? "bg-red-100 text-red-800"
+                                  : farm.environmentalData.riskLevel === "High"
+                                  ? "bg-orange-100 text-orange-800"
+                                  : farm.environmentalData.riskLevel === "Medium"
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-green-100 text-green-800"
+                              }`}>
+                                {farm.environmentalData.riskLevel} Risk (CRI:{" "}
+                                {farm.environmentalData.cri.toFixed(1)})
+                              </span>
+                            </div>
+                          </div>
+                  
+                          <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                            <div className="flex items-center gap-1">
+                              <Thermometer className="h-3 w-3" />
+                              <span>{farm.environmentalData.temperature}°C</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Droplets className="h-3 w-3" />
+                              <span>{farm.environmentalData.humidity}%</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <CloudRain className="h-3 w-3" />
+                              <span>{farm.environmentalData.rainfall}mm</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Droplets className="h-3 w-3" />
+                              <span>Soil: {farm.environmentalData.soilMoisture}%</span>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="mt-2 p-2 rounded bg-gray-50">
+                          <p className="text-sm text-gray-600">No environmental data available</p>
                         </div>
-                      </div>
-
-                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                        <div className="flex items-center gap-1">
-                          <Thermometer className="h-3 w-3" />
-                          <span>{farm.environmentalData.temperature}°C</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Droplets className="h-3 w-3" />
-                          <span>{farm.environmentalData.humidity}%</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <CloudRain className="h-3 w-3" />
-                          <span>{farm.environmentalData.rainfall}mm</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <Droplets className="h-3 w-3" />
-                          <span>
-                            Soil: {farm.environmentalData.soilMoisture}%
-                          </span>
-                        </div>
-                      </div>
+                      )}
                     </div>
                   </Popup>
-                </CircleMarker>
-              );
-            })}
+                  </CircleMarker>
+                );
+              })}
           </MapContainer>
         </div>
 

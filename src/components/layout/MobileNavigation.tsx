@@ -15,25 +15,25 @@ const MobileNavigation: React.FC = () => {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-10 bg-sidebar border-t border-sidebar-border">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-sidebar text-primary-foreground border-t border-primary-foreground/20 pb-safe shadow-lg">
       <div className="grid grid-cols-5">
         {navigation.map((item) => (
           <Link
             key={item.name}
             to={item.href}
             className={cn(
-              "flex flex-col items-center justify-center px-2 py-2 text-[10px] font-medium",
+              "flex flex-col items-center justify-center px-2 py-3 text-[10px] font-medium",
               location.pathname === item.href
-                ? "text-primary"
-                : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
+                ? "text-red-600"
+                : "text-primary-foreground/70 hover:text-primary-foreground"
             )}
           >
             <item.icon
               className={cn(
-                "h-5 w-5 mb-0.5",
+                "h-5 w-5 mb-1",
                 location.pathname === item.href
-                  ? "text-primary"
-                  : "text-sidebar-foreground/70"
+                  ? "text-red-600"
+                  : "text-primary-foreground/70"
               )}
               aria-hidden="true"
             />

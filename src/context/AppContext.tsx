@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { useIsMobile, useIsTouchDevice } from "@/hooks/use-mobile";
 
 interface AppContextType {
   theme: string;
@@ -8,6 +8,7 @@ interface AppContextType {
   toggleMobileMenu: () => void;
   closeMobileMenu: () => void;
   isMobile: boolean;
+  isTouch: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -20,6 +21,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   );
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const isMobile = useIsMobile();
+  const isTouch = useIsTouchDevice();
 
   useEffect(() => {
     if (theme === "dark") {
@@ -50,7 +52,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         isMobileMenuOpen,
         toggleMobileMenu,
         closeMobileMenu,
-        isMobile
+        isMobile,
+        isTouch
       }}
     >
       {children}

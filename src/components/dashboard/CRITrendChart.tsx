@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   LineChart,
@@ -11,6 +11,7 @@ import {
   ReferenceLine
 } from "recharts";
 import { api } from "@/services/authService";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CRITrendChartProps {
   period?: "week" | "month";
@@ -31,6 +32,8 @@ const CRITrendChart: React.FC<CRITrendChartProps> = ({
 }) => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<CRIDataPoint[]>([]);
+  const isMobile = useIsMobile();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchCRIHistory();
@@ -57,7 +60,7 @@ const CRITrendChart: React.FC<CRITrendChartProps> = ({
         params: { startDate, endDate }
       });
 
-      const processedData = response.data.map((item: any) => ({
+      const processedData = response.data.history.map((item: any) => ({
         date: new Date(item.date).toLocaleDateString(undefined, {
           month: "short",
           day: "numeric"
@@ -166,20 +169,64 @@ const CRITrendChart: React.FC<CRITrendChartProps> = ({
     return <Skeleton className="w-full h-[300px]" />;
   }
 
+  // Filter dates for mobile view to reduce crowding
+  const filteredData =
+    isMobile && data.length > 7
+      ? data.filter((_, index) => {
+          // Always include first and last points
+          if (index === 0 || index === data.length - 1) return true;
+
+          // For weekly view, show more points
+          if (period === "week") {
+            return index % 2 === 0; // Show every other point for week view
+          }
+
+          // For monthly view, be more selective
+          return index % Math.ceil(data.length / 6) === 0;
+        })
+      : data;
+
+  // Adjust margins based on screen size
+  const margins = isMobile
+    ? { top: 15, right: 10, left: 0, bottom: 20 }
+    : { top: 20, right: 30, left: 20, bottom: 30 };
+
+  // Calculate chart height to leave space for legends
+  const chartHeight = height - (isMobile ? 40 : 30);
+
   return (
-    <div style={{ height, width: "100%" }}>
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart
-          data={data}
-          margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-          <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
+    <div
+      ref={containerRef}
+      style={{ height, width: "100%" }}
+      className="chart-container"
+    >
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <LineChart data={filteredData} margin={margins}>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke={isMobile ? "#f0f0f0" : "#e0e0e0"}
+          />
+          <XAxis
+            dataKey="date"
+            tick={{ fontSize: isMobile ? 10 : 12 }}
+            interval={isMobile ? "preserveEnd" : "preserveStartEnd"}
+            tickFormatter={(value) =>
+              isMobile && period === "month" ? value.slice(0, 3) : value
+            }
+            height={30}
+            padding={{ left: 10, right: 10 }}
+            minTickGap={5}
+          />
+          <YAxis
+            domain={[0, 100]}
+            tick={{ fontSize: isMobile ? 10 : 12 }}
+            width={isMobile ? 30 : 35}
+            padding={{ top: 10, bottom: 10 }}
+          />
           <Tooltip content={<CustomTooltip />} />
 
           {/* Reference lines for risk zones */}
-          <ReferenceLine y={20} stroke="#ef4444" strokeDasharray="3 3" />
+          <ReferenceLine y={20} stroke="#f97316" strokeDasharray="3 3" />
           <ReferenceLine y={40} stroke="#84cc16" strokeDasharray="3 3" />
           <ReferenceLine y={60} stroke="#84cc16" strokeDasharray="3 3" />
           <ReferenceLine y={80} stroke="#ef4444" strokeDasharray="3 3" />
@@ -188,15 +235,20 @@ const CRITrendChart: React.FC<CRITrendChartProps> = ({
             type="monotone"
             dataKey="cri"
             stroke="#1f3c26"
-            strokeWidth={2}
-            dot={{ fill: "#1f3c26", r: 4 }}
-            activeDot={{ r: 6, fill: "#1f3c26" }}
+            strokeWidth={isMobile ? 1.5 : 2}
+            dot={{ fill: "#1f3c26", r: isMobile ? 3 : 4 }}
+            activeDot={{ r: isMobile ? 5 : 6, fill: "#1f3c26" }}
+            isAnimationActive={true}
           />
         </LineChart>
       </ResponsiveContainer>
-      <div className="flex justify-between mt-2 text-xs">
+      <div
+        className={`flex mt-4 text-xs ${
+          isMobile ? "flex-row space-x-4 pb-3" : "justify-between px-4"
+        }`}
+      >
         <div className="flex items-center gap-1">
-          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
           <span>Early Blight Risk</span>
         </div>
         <div className="flex items-center gap-1">

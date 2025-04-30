@@ -1,7 +1,6 @@
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  LayoutDashboard,
   Sprout,
   AlertTriangle,
   LineChart,
@@ -11,14 +10,12 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/context/AuthContext";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const navigation = [
-  { name: "Field Overview", href: "/dashboard", icon: Home },
+  { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Plant Diagnosis", href: "/diagnosis", icon: Sprout },
-  { name: "Analytics & Insights", href: "/analytics", icon: LineChart },
+  { name: "Analytics", href: "/analytics", icon: LineChart },
   { name: "Risk Alerts", href: "/alerts", icon: AlertTriangle },
   { name: "My Profile", href: "/profile", icon: User }
 ];

@@ -57,24 +57,47 @@ const WeatherForecastSection: React.FC = () => {
     try {
       // Call the backend API to get forecast data
       const response = await api.get("/environmental/forecast");
-
-      if (
-        response.data &&
-        response.data.forecast &&
-        response.data.forecast.length > 0
-      ) {
-        setForecast(response.data.forecast);
+  
+      if (response.data && response.data.forecast && response.data.forecast.length > 0) {
+        // Process data to ensure correct formatting
+        const formattedForecast = response.data.forecast.map(day => ({
+          ...day,
+          // Ensure temperature values have proper formatting
+          temperature: {
+            min: typeof day.temperature.min === 'number' ? day.temperature.min : parseFloat(day.temperature.min),
+            max: typeof day.temperature.max === 'number' ? day.temperature.max : parseFloat(day.temperature.max),
+            avg: typeof day.temperature.avg === 'number' ? day.temperature.avg : parseFloat(day.temperature.avg)
+          },
+          // Ensure humidity is a number
+          humidity: typeof day.humidity === 'number' ? day.humidity : parseFloat(day.humidity),
+          // Ensure rain values are numbers
+          rainChance: typeof day.rainChance === 'number' ? day.rainChance : parseFloat(day.rainChance),
+          rainfall: typeof day.rainfall === 'number' ? day.rainfall : parseFloat(day.rainfall),
+        }));
+        
+        setForecast(formattedForecast);
+        
+        // Show warning if using mock data
+        if (response.data.source === "mock") {
+          toast.warning("Using demo forecast data. Weather API unavailable.");
+        }
+        
         setError(null);
       } else {
-        setError(
-          "No forecast data available. Please check your farm location settings."
-        );
+        setError("No forecast data available. Please check your farm location settings.");
         toast.error("Failed to retrieve forecast data");
       }
     } catch (error: any) {
       console.error("Error fetching forecast:", error);
-      setError(error.response?.data?.message || "Failed to load forecast data");
-      toast.error("Failed to retrieve forecast data");
+      
+      const errorMessage = error.response?.status === 400
+        ? "Your farm location is not set. Please update your profile."
+        : error.response?.status === 503
+        ? "Weather forecast service is temporarily unavailable."
+        : error.response?.data?.message || "Failed to load forecast data";
+        
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -235,7 +258,8 @@ const WeatherForecastSection: React.FC = () => {
                   <div className="flex items-center gap-1">
                     <Thermometer className="h-3 w-3 text-tomato" />
                     <span className="text-xs font-medium">
-                      {day.temperature.min}° - {day.temperature.max}°C
+                      {day.temperature.min.toFixed(1)}° -{" "}
+                      {day.temperature.max.toFixed(1)}°C
                     </span>
                   </div>
                 </div>
@@ -270,7 +294,7 @@ const WeatherForecastSection: React.FC = () => {
                     <div className="flex items-center gap-1">
                       <Droplets className="h-3 w-3 text-blue-600" />
                       <span className="text-xs font-medium">
-                        {day.rainfall}mm
+                        {day.rainfall.toFixed(1)}mm
                       </span>
                     </div>
                   </div>

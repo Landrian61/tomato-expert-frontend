@@ -66,9 +66,11 @@ export const getNotificationPermission = (): NotificationPermission => {
 /**
  * Register service worker for push notifications
  */
-export const registerServiceWorker = async (): Promise<ServiceWorkerRegistration> => {
-  if (!(await isPushSupported())) {
-    throw new Error('Service workers are not supported in this browser');
+export const registerServiceWorker = async () => {
+  // Skip in development mode
+  if (import.meta.env.DEV) {
+    console.log('Skipping push notification setup in development');
+    return null;
   }
   
   try {

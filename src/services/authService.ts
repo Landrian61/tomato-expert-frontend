@@ -9,6 +9,15 @@ const API_URL = import.meta.env.DEV
   ? 'http://localhost:5000/api' 
   : 'https://tomato-expert-backend.onrender.com/api';
 
+// Track refresh token attempts to prevent loops
+let isRefreshing = false;
+let refreshAttempts = 0;
+const MAX_REFRESH_ATTEMPTS = 3;
+
+// Add last refresh timestamp to prevent rapid consecutive refreshes
+let lastRefreshTime = 0;
+const MIN_REFRESH_INTERVAL = 10000; // 10 seconds  
+
 // Types
 export interface UserData {
   id: string;
@@ -69,9 +78,48 @@ const clearAuthFromIDB = async () => {
   }
 };
 
+// Check if we're on the login or register page
+const isAuthPage = () => {
+  const path = window.location.pathname;
+  return path.includes('/login') || 
+         path.includes('/register') || 
+         path.includes('/forgot-password') ||
+         path.includes('/verify');
+};
+
 // Updated refreshToken function
 const refreshToken = async () => {
+
+  // Skip token refresh on auth pages
+  if (isAuthPage()) {
+    return { accessToken: null, skipRefresh: true };
+  }
+  
+  // Check if refresh is already in progress
+  if (isRefreshing) {
+    console.log('Token refresh already in progress, skipping');
+    return { accessToken: null, skipRefresh: true };
+  }
+  
+  // Check if we've exceeded max refresh attempts
+  if (refreshAttempts >= MAX_REFRESH_ATTEMPTS) {
+    console.warn('Maximum refresh attempts exceeded, forcing logout');
+    await logout();
+    return { accessToken: null, forceLogout: true };
+  }
+
+  // Prevent refreshing too frequently
+  const now = Date.now();
+  if (now - lastRefreshTime < MIN_REFRESH_INTERVAL) {
+    console.log('Refresh attempted too soon after previous refresh, skipping');
+    return { accessToken: null, skipRefresh: true };
+  }
+  
   try {
+    isRefreshing = true;
+    refreshAttempts++;
+    lastRefreshTime = now;
+
     // Use a direct axios call instead of the api instance to avoid interceptor loops
     const response = await axios.post(
       `${API_URL}/refresh-token`, 
@@ -80,6 +128,9 @@ const refreshToken = async () => {
     );
     
     if (response.data.accessToken) {
+      // Reset attempts counter on success
+      refreshAttempts = 0;
+      
       // Update access token in storage
       const authData = JSON.parse(localStorage.getItem('authData') || 'null') || await getAuthFromIDB();
       
@@ -88,7 +139,6 @@ const refreshToken = async () => {
         // Also update user info if provided by the server
         if (response.data.user) {
           authData.user = response.data.user;
-          // Update remember me preference if present
           if (typeof response.data.user.rememberMe === 'boolean') {
             authData.rememberMe = response.data.user.rememberMe;
           }
@@ -112,8 +162,6 @@ const refreshToken = async () => {
       // When offline, try to extend token life locally for PWA functionality
       const authData = JSON.parse(localStorage.getItem('authData') || 'null') || await getAuthFromIDB();
       if (authData?.accessToken) {
-        // Instead of failing, return the current token when offline
-        // This allows the PWA to continue functioning in offline mode
         return { 
           accessToken: authData.accessToken,
           user: authData.user,
@@ -121,13 +169,20 @@ const refreshToken = async () => {
         };
       }
     }
+
+    if (refreshAttempts >= MAX_REFRESH_ATTEMPTS) {
+      // Force logout after maximum attempts
+      await logout();
+      return { accessToken: null, forceLogout: true };
+    }
     
-    // For 403 errors (forbidden/expired), we'll return null token but not force logout
     // For other errors, also return null but log the specific error
     return { 
       accessToken: null,
       offlineMode: !navigator.onLine 
     };
+  } finally {
+    isRefreshing = false;
   }
 };
 
@@ -165,6 +220,10 @@ const login = async (credentials: {
   rememberMe?: boolean 
 }) => {
   try {
+    // Reset refresh tracking on new login
+    refreshAttempts = 0;
+    isRefreshing = false;
+    
     const response = await api.post<AuthResponse>('/login', credentials);
     
     if (response.data.accessToken) {
@@ -186,6 +245,10 @@ const login = async (credentials: {
 };
 
 const logout = async () => {
+  // Reset refresh tracking
+  refreshAttempts = 0;
+  isRefreshing = false;
+  
   try {
     await api.post('/logout');
   } catch (error) {
@@ -194,6 +257,11 @@ const logout = async () => {
     // Clear auth data even if API call fails
     localStorage.removeItem('authData');
     await clearAuthFromIDB();
+    
+    // Redirect to login page if not already there
+    if (!window.location.pathname.includes('/login')) {
+      window.location.href = '/login';
+    }
   }
 };
 

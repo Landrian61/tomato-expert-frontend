@@ -28,12 +28,15 @@ const MapSetup: React.FC<{ center: LatLngExpression; zoom: number }> = ({
   const map = useMap();
 
   React.useEffect(() => {
-    map.setView(center, zoom);
+    if (map) {
+      // Wait for the map to be ready before setting view
+      map.whenReady(() => {
+        map.setView(center, zoom);
 
-    // Add this to force a map resize after component mounts
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 100);
+        // Force a map resize after it's ready
+        map.invalidateSize();
+      });
+    }
   }, [center, zoom, map]);
 
   return null;
@@ -116,8 +119,9 @@ const FarmerLocationMap: React.FC<FarmerLocationMapProps> = ({
           {/* Add a key with unique value to force remount of MapContainer when location changes */}
           <MapContainer
             key={`map-${farmerLocation.location.latitude}-${farmerLocation.location.longitude}`}
+            {...({ center: farmerPosition, zoom: 10 } as any)}
             style={{ height: "100%", width: "100%" }}
-            className="rounded-md overflow-hidden"   
+            className="rounded-md overflow-hidden"
           >
             <MapSetup center={farmerPosition} zoom={10} />
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
