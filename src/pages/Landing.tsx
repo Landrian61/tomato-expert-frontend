@@ -15,6 +15,7 @@ import {
   BarChart,
   ChevronRight
 } from "lucide-react";
+import UgandaBlightMap from "@/components/map/UgandaBlightMap";
 
 const Landing = () => {
   return (
@@ -83,6 +84,16 @@ const Landing = () => {
           </div>
         </div>
       </header>
+
+      {/* Add map section after hero section */}
+      <section className="py-12 px-4 md:px-8 bg-gray-50">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-8">
+            Real-time Blight Risk Across Uganda
+          </h2>
+          <UgandaBlightMap />
+        </div>
+      </section>
 
       {/* Key Benefits */}
       <section className="py-12 bg-white border-b border-gray-100">

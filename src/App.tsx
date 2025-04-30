@@ -20,47 +20,70 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import ChangePassword from "./pages/ChangePassword";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
+import Analytics from "@/pages/Analytics";
+import { useEffect } from "react";
+import { testApiEndpoint } from "./utils/apiDebugger";
+import "./utils/debugLocationService"; // Import for side effects
+import "@/utils/locationDebugger"; // Import for side effects
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <AppProvider>
-        <AuthProvider>
-          <NotificationProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/verify-email" element={<VerifyEmail />} />
-                <Route path="/forgot-password" element={<ForgotPassword />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
+const App = () => {
+  // Debug tools setup
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log(
+        "🔧 Development mode: API debugging tools available in console"
+      );
+      console.log('Try: window.testApiEndpoint("/environmental/latest")');
+      console.log("Try: window.diagnoseFarmLocation() - Check location issues");
+      console.log("Try: window.setTestFarmLocation() - Set test location");
+    }
+  }, []);
 
-                {/* Protected routes that require authentication */}
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/dashboard" element={<Index />} />
-                  <Route path="/diagnosis" element={<Diagnosis />} />
-                  <Route path="/diagnosis/:id" element={<DiagnosisDetail />} />
-                  <Route path="/alerts" element={<Alerts />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route
-                    path="/account/change-password"
-                    element={<ChangePassword />}
-                  />
-                </Route>
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AppProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <Routes>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/register" element={<Register />} />
+                  <Route path="/verify-email" element={<VerifyEmail />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
 
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </TooltipProvider>
-          </NotificationProvider>
-        </AuthProvider>
-      </AppProvider>
-    </BrowserRouter>
-  </QueryClientProvider>
-);
+                  {/* Protected routes that require authentication */}
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/dashboard" element={<Index />} />
+                    <Route path="/diagnosis" element={<Diagnosis />} />
+                    <Route
+                      path="/diagnosis/:id"
+                      element={<DiagnosisDetail />}
+                    />
+                    <Route path="/alerts" element={<Alerts />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route
+                      path="/account/change-password"
+                      element={<ChangePassword />}
+                    />
+                    <Route path="/analytics" element={<Analytics />} />
+                  </Route>
+
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </TooltipProvider>
+            </NotificationProvider>
+          </AuthProvider>
+        </AppProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

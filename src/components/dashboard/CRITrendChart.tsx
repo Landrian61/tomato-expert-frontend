@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useEffect, useState, useRef } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   LineChart,
@@ -9,154 +8,156 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  ReferenceLine,
-  ReferenceArea,
-  Legend
+  ReferenceLine
 } from "recharts";
-import {
-  getCRIHistory,
-  formatCRIHistoryForChart
-} from "@/services/environmentalDataService";
-import { toast } from "sonner";
-import {
-  ArrowDownIcon,
-  ArrowRightIcon,
-  ArrowUpIcon,
-  HelpCircle
-} from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip as UITooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from "@/components/ui/tooltip";
+import { api } from "@/services/authService";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface CRITrendChartProps {
-  period?: "day" | "week" | "month" | "year";
-  showTrend?: boolean;
+  period?: "week" | "month";
   height?: number;
+  showTrend?: boolean;
+}
+
+interface CRIDataPoint {
+  date: string;
+  cri: number;
+  riskLevel: string;
 }
 
 const CRITrendChart: React.FC<CRITrendChartProps> = ({
   period = "week",
-  showTrend = true,
-  height = 300
+  height = 300,
+  showTrend = false
 }) => {
   const [loading, setLoading] = useState(true);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [trendDirection, setTrendDirection] = useState<
-    "increasing" | "decreasing" | "stable"
-  >("stable");
-  const [averageChange, setAverageChange] = useState(0);
+  const [data, setData] = useState<CRIDataPoint[]>([]);
+  const isMobile = useIsMobile();
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const response = await getCRIHistory(period);
-        const formattedData = formatCRIHistoryForChart(response);
-
-        setChartData(formattedData);
-        setTrendDirection(response.trend.direction);
-        setAverageChange(response.trend.averageChange);
-      } catch (error) {
-        console.error("Error fetching CRI history:", error);
-        toast.error("Failed to load CRI trend data");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchCRIHistory();
   }, [period]);
 
-  // Define risk level ranges
-  const riskLevels = {
-    earlyBlight: {
-      min: 0,
-      max: 45,
-      color: "rgba(255, 193, 7, 0.2)",
-      label: "Early Blight Risk"
-    },
-    healthy: {
-      min: 45,
-      max: 55,
-      color: "rgba(75, 192, 75, 0.2)",
-      label: "Healthy"
-    },
-    lateBlight: {
-      min: 55,
-      max: 100,
-      color: "rgba(220, 53, 69, 0.2)",
-      label: "Late Blight Risk"
+  const fetchCRIHistory = async () => {
+    setLoading(true);
+    try {
+      const now = new Date();
+      const endDate = now.toISOString().split("T")[0];
+
+      let startDate;
+      if (period === "week") {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        startDate = sevenDaysAgo.toISOString().split("T")[0];
+      } else {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        startDate = thirtyDaysAgo.toISOString().split("T")[0];
+      }
+
+      const response = await api.get("/environmental/cri-history", {
+        params: { startDate, endDate }
+      });
+
+      const processedData = response.data.history.map((item: any) => ({
+        date: new Date(item.date).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric"
+        }),
+        cri: item.cri,
+        riskLevel: item.riskLevel
+      }));
+
+      setData(processedData);
+    } catch (error) {
+      console.error("Error fetching CRI history:", error);
+      // For demo, generate mock data
+      const mockData = generateMockData(period);
+      setData(mockData);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getTrendIcon = () => {
-    if (trendDirection === "increasing") {
-      return <ArrowUpIcon className="h-4 w-4 text-tomato" />;
-    } else if (trendDirection === "decreasing") {
-      return <ArrowDownIcon className="h-4 w-4 text-plant" />;
-    }
-    return <ArrowRightIcon className="h-4 w-4 text-warning-light" />;
-  };
+  const generateMockData = (period: string) => {
+    const mockData: CRIDataPoint[] = [];
+    const days = period === "week" ? 7 : 30;
+    const today = new Date();
 
-  const getTrendText = () => {
-    if (trendDirection === "increasing") {
-      return (
-        <span className="text-tomato">
-          Increasing (
-          {averageChange > 0
-            ? `+${averageChange.toFixed(1)}`
-            : averageChange.toFixed(1)}
-          )
-        </span>
-      );
-    } else if (trendDirection === "decreasing") {
-      return (
-        <span className="text-plant">
-          Decreasing (
-          {averageChange > 0
-            ? `+${averageChange.toFixed(1)}`
-            : averageChange.toFixed(1)}
-          )
-        </span>
-      );
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(today.getDate() - i);
+
+      // Generate a base trend with some variation
+      let baseVal = 50;
+
+      // Add a seasonal trend factor
+      if (i < days / 3) baseVal -= 10; // More early blight trend at start
+      else if (i > (days * 2) / 3) baseVal += 15; // More late blight trend at end
+
+      // Add some random variation
+      const variation = Math.random() * 20 - 10;
+      const cri = Math.max(1, Math.min(99, baseVal + variation));
+
+      // Determine risk level based on CRI
+      let riskLevel;
+      if (cri < 20) riskLevel = "Critical";
+      else if (cri < 30) riskLevel = "High";
+      else if (cri < 40) riskLevel = "Medium";
+      else if (cri < 60) riskLevel = "Low";
+      else if (cri < 70) riskLevel = "Medium";
+      else if (cri < 80) riskLevel = "High";
+      else riskLevel = "Critical";
+
+      mockData.push({
+        date: date.toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric"
+        }),
+        cri,
+        riskLevel
+      });
     }
-    return (
-      <span className="text-warning-light">
-        Stable ({averageChange.toFixed(1)})
-      </span>
-    );
+
+    return mockData;
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const cri = payload[0].value;
-      let riskText = "Healthy";
-      let riskClass = "text-plant";
+      let riskText, riskColor;
 
-      if (cri >= 45 && cri <= 55) {
-        riskText = "Healthy";
-        riskClass = "text-plant";
-      } else if (cri > 55) {
-        const intensity = Math.min(100, Math.floor(((cri - 55) / 45) * 100));
-        riskText = `Late Blight Risk (${intensity}%)`;
-        riskClass = "text-tomato";
-      } else if (cri < 45) {
-        const intensity = Math.min(100, Math.floor(((45 - cri) / 45) * 100));
-        riskText = `Early Blight Risk (${intensity}%)`;
-        riskClass = "text-warning-dark";
+      if (cri < 20) {
+        riskText = "Critical Early Blight Risk";
+        riskColor = "text-red-500";
+      } else if (cri < 30) {
+        riskText = "High Early Blight Risk";
+        riskColor = "text-orange-500";
+      } else if (cri < 40) {
+        riskText = "Medium Early Blight Risk";
+        riskColor = "text-amber-500";
+      } else if (cri < 60) {
+        riskText = "Low Blight Risk";
+        riskColor = "text-green-500";
+      } else if (cri < 70) {
+        riskText = "Medium Late Blight Risk";
+        riskColor = "text-amber-500";
+      } else if (cri < 80) {
+        riskText = "High Late Blight Risk";
+        riskColor = "text-orange-500";
+      } else {
+        riskText = "Critical Late Blight Risk";
+        riskColor = "text-red-500";
       }
 
       return (
-        <div className="bg-background border rounded-md shadow-md p-2 text-sm">
+        <div className="bg-background rounded-md border p-2 shadow-md text-xs">
           <p className="font-medium">{label}</p>
           <p>
-            CRI: <span className="font-semibold">{cri}</span>
+            CRI: <span className="font-medium">{Math.round(cri)}</span>
           </p>
-          <p className={riskClass}>{riskText}</p>
+          <p className={riskColor}>{riskText}</p>
         </div>
       );
     }
@@ -164,171 +165,102 @@ const CRITrendChart: React.FC<CRITrendChartProps> = ({
     return null;
   };
 
-  const CustomizedLegend = () => (
-    <div className="flex justify-around mt-2 text-xs">
-      <div className="flex items-center">
-        <div className="w-3 h-3 mr-1 bg-yellow-500/20 border border-yellow-500"></div>
-        <span>Early Blight Risk (0-45)</span>
-      </div>
-      <div className="flex items-center">
-        <div className="w-3 h-3 mr-1 bg-green-500/20 border border-green-500"></div>
-        <span>Healthy (45-55)</span>
-      </div>
-      <div className="flex items-center">
-        <div className="w-3 h-3 mr-1 bg-red-500/20 border border-red-500"></div>
-        <span>Late Blight Risk (55-100)</span>
-      </div>
-    </div>
-  );
+  if (loading) {
+    return <Skeleton className="w-full h-[300px]" />;
+  }
 
-  const renderChart = () => {
-    if (loading) {
-      return <Skeleton className={`w-full h-[${height}px]`} />;
-    }
+  // Filter dates for mobile view to reduce crowding
+  const filteredData =
+    isMobile && data.length > 7
+      ? data.filter((_, index) => {
+          // Always include first and last points
+          if (index === 0 || index === data.length - 1) return true;
 
-    if (!chartData || chartData.length === 0) {
-      return (
-        <div
-          className={`w-full h-[${height}px] flex items-center justify-center bg-muted/50 rounded-md`}
-        >
-          <p className="text-muted-foreground">No data available</p>
-        </div>
-      );
-    }
+          // For weekly view, show more points
+          if (period === "week") {
+            return index % 2 === 0; // Show every other point for week view
+          }
 
-    return (
-      <>
-        <ResponsiveContainer width="100%" height={height}>
-          <LineChart
-            data={chartData}
-            margin={{ top: 20, right: 30, left: 10, bottom: 10 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-            <XAxis
-              dataKey="date"
-              tick={{ fontSize: 12 }}
-              tickMargin={10}
-              stroke="#888"
-            />
-            <YAxis
-              domain={[0, 100]}
-              tick={{ fontSize: 12 }}
-              tickMargin={10}
-              stroke="#888"
-              ticks={[0, 25, 50, 75, 100]}
-            />
-            <Tooltip content={<CustomTooltip />} />
+          // For monthly view, be more selective
+          return index % Math.ceil(data.length / 6) === 0;
+        })
+      : data;
 
-            {/* Risk zone areas */}
-            <ReferenceArea
-              y1={riskLevels.earlyBlight.min}
-              y2={riskLevels.earlyBlight.max}
-              fill={riskLevels.earlyBlight.color}
-              ifOverflow="extendDomain"
-              label={{
-                value: "Early Blight Risk",
-                position: "insideLeft",
-                fill: "#FF9800",
-                fontSize: 12
-              }}
-            />
-            <ReferenceArea
-              y1={riskLevels.healthy.min}
-              y2={riskLevels.healthy.max}
-              fill={riskLevels.healthy.color}
-              ifOverflow="extendDomain"
-              label={{
-                value: "Healthy",
-                position: "insideLeft",
-                fill: "#4CAF50",
-                fontSize: 12
-              }}
-            />
-            <ReferenceArea
-              y1={riskLevels.lateBlight.min}
-              y2={riskLevels.lateBlight.max}
-              fill={riskLevels.lateBlight.color}
-              ifOverflow="extendDomain"
-              label={{
-                value: "Late Blight Risk",
-                position: "insideLeft",
-                fill: "#F44336",
-                fontSize: 12
-              }}
-            />
+  // Adjust margins based on screen size
+  const margins = isMobile
+    ? { top: 15, right: 10, left: 0, bottom: 20 }
+    : { top: 20, right: 30, left: 20, bottom: 30 };
 
-            {/* Reference lines for threshold boundaries */}
-            <ReferenceLine
-              y={45}
-              stroke="green"
-              strokeWidth={1.5}
-              strokeDasharray="3 3"
-            />
-            <ReferenceLine
-              y={55}
-              stroke="green"
-              strokeWidth={1.5}
-              strokeDasharray="3 3"
-            />
-
-            <Line
-              type="monotone"
-              dataKey="value"
-              name="CRI"
-              stroke="hsl(var(--primary))"
-              strokeWidth={2}
-              dot={{
-                stroke: "hsl(var(--primary))",
-                fill: "white",
-                strokeWidth: 2,
-                r: 4
-              }}
-              activeDot={{ r: 6, fill: "hsl(var(--primary))" }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-        <CustomizedLegend />
-      </>
-    );
-  };
+  // Calculate chart height to leave space for legends
+  const chartHeight = height - (isMobile ? 40 : 30);
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-1">
-            <CardTitle className="text-sm font-medium">
-              CRI Trend ({period})
-            </CardTitle>
-            <TooltipProvider>
-              <UITooltip>
-                <TooltipTrigger asChild>
-                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="max-w-xs">
-                    Cumulative Risk Index (CRI) shows overall disease risk based
-                    on environmental conditions. Different zones indicate risk
-                    levels for healthy conditions, early blight, and late
-                    blight.
-                  </p>
-                </TooltipContent>
-              </UITooltip>
-            </TooltipProvider>
-          </div>
-          {showTrend && !loading && (
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-muted-foreground">Trend:</span>
-              <Badge variant="outline" className="flex items-center gap-1">
-                {getTrendIcon()}
-                {getTrendText()}
-              </Badge>
-            </div>
-          )}
+    <div
+      ref={containerRef}
+      style={{ height, width: "100%" }}
+      className="chart-container"
+    >
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <LineChart data={filteredData} margin={margins}>
+          <CartesianGrid
+            strokeDasharray="3 3"
+            stroke={isMobile ? "#f0f0f0" : "#e0e0e0"}
+          />
+          <XAxis
+            dataKey="date"
+            tick={{ fontSize: isMobile ? 10 : 12 }}
+            interval={isMobile ? "preserveEnd" : "preserveStartEnd"}
+            tickFormatter={(value) =>
+              isMobile && period === "month" ? value.slice(0, 3) : value
+            }
+            height={30}
+            padding={{ left: 10, right: 10 }}
+            minTickGap={5}
+          />
+          <YAxis
+            domain={[0, 100]}
+            tick={{ fontSize: isMobile ? 10 : 12 }}
+            width={isMobile ? 30 : 35}
+            padding={{ top: 10, bottom: 10 }}
+          />
+          <Tooltip content={<CustomTooltip />} />
+
+          {/* Reference lines for risk zones */}
+          <ReferenceLine y={20} stroke="#f97316" strokeDasharray="3 3" />
+          <ReferenceLine y={40} stroke="#84cc16" strokeDasharray="3 3" />
+          <ReferenceLine y={60} stroke="#84cc16" strokeDasharray="3 3" />
+          <ReferenceLine y={80} stroke="#ef4444" strokeDasharray="3 3" />
+
+          <Line
+            type="monotone"
+            dataKey="cri"
+            stroke="#1f3c26"
+            strokeWidth={isMobile ? 1.5 : 2}
+            dot={{ fill: "#1f3c26", r: isMobile ? 3 : 4 }}
+            activeDot={{ r: isMobile ? 5 : 6, fill: "#1f3c26" }}
+            isAnimationActive={true}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+      <div
+        className={`flex mt-4 text-xs ${
+          isMobile ? "flex-row space-x-4 pb-3" : "justify-between px-4"
+        }`}
+      >
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+          <span>Early Blight Risk</span>
         </div>
-      </CardHeader>
-      <CardContent>{renderChart()}</CardContent>
-    </Card>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+          <span>Low Risk</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+          <span>Late Blight Risk</span>
+        </div>
+      </div>
+    </div>
   );
 };
 

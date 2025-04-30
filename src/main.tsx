@@ -1,23 +1,42 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import App from './App';
-import './index.css';
-import './firebase'; // Import Firebase initialization early
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App.tsx";
+import "./index.css";
+import * as serviceWorkerRegistration from "./serviceWorkerRegistration";
+import { toast } from "sonner";
 
-// Register service worker
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker
-    .register("/service-worker.js")
-    .then((registration) => {
-      console.log("Service Worker registered with scope:", registration.scope);
-    })
-    .catch((error) => {
-      console.error("Service Worker registration failed:", error);
-    });
-}
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
+ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
 );
+
+// Register the service worker for PWA functionality
+serviceWorkerRegistration.register({
+  onSuccess: () => {
+    console.log("App can now work offline");
+  },
+  onUpdate: (registration) => {
+    // Show a toast notification to the user about the update
+    toast.info("App update available", {
+      description: "Reload the page to see the latest version",
+      action: {
+        label: "Reload",
+        onClick: () => {
+          if (registration && registration.waiting) {
+            registration.waiting.postMessage({ type: "SKIP_WAITING" });
+          }
+          window.location.reload();
+        }
+      }
+    });
+  },
+  onOffline: () => {
+    toast.warning("You are offline", {
+      description: "Some features may be limited"
+    });
+  },
+  onOnline: () => {
+    toast.success("You are back online");
+  }
+});

@@ -226,9 +226,10 @@ export const getCRIHistory = async (period: 'day' | 'week' | 'month' | 'year'): 
 export const updateUserLocation = async (location: LocationUpdate) => {
   // Define possible API paths to try
   const possiblePaths = [
-    '/environmental/update-location',
-    '/environmental-data/update-location',
-    '/weather/update-location'
+    '/environmental/location',          // Changed from update-location
+    '/user/location',                   // Added user location endpoint
+    '/environmental-data/location',     // Changed from update-location
+    '/weather/location'                 // Changed from update-location
   ];
 
   let lastError: any = null;
@@ -247,7 +248,18 @@ export const updateUserLocation = async (location: LocationUpdate) => {
     }
   }
 
-  console.error('All update location API paths failed.');
+  console.error('All update location API paths failed. Last error:', lastError?.message || 'Unknown error');
+  
+  // Check if we're in development mode for debugging
+  if (process.env.NODE_ENV === 'development') {
+    console.warn('Location update debug info:', {
+      possiblePaths,
+      coordinates: location,
+      statusCode: lastError?.response?.status,
+      errorMessage: lastError?.response?.data?.message
+    });
+  }
+  
   // Re-throw the last error
   throw new Error('Failed to update location: ' + (lastError?.message || 'Unknown error'));
 };
