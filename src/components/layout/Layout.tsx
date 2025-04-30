@@ -1,41 +1,33 @@
-
-import React from 'react';
-import { useIsMobile } from '@/hooks/use-mobile';
-import Sidebar from './Sidebar';
-import MobileNavigation from './MobileNavigation';
-import Header from './Header';
-import { useAppContext } from '@/context/AppContext';
+import React, { ReactNode } from "react";
+import { useAppContext } from "@/context/AppContext";
+import Header from "./Header";
+import Sidebar from "./Sidebar";
+import MobileNavigation from "./MobileNavigation";
 
 interface LayoutProps {
-  children: React.ReactNode;
+  children: ReactNode;
   title: string;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children, title }) => {
-  const isMobile = useIsMobile();
-  const { isMobileMenuOpen } = useAppContext();
+  const { isMobile } = useAppContext();
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {isMobile ? (
-        <>
-          <Header title={title} />
-          <main className="flex-1 pb-16 px-4 py-4 overflow-auto">
-            {children}
-          </main>
-          <MobileNavigation />
-        </>
-      ) : (
-        <div className="flex h-screen overflow-hidden">
-          <Sidebar />
-          <div className="flex-1 flex flex-col overflow-auto">
-            <Header title={title} />
-            <main className="flex-1 px-6 py-6 overflow-auto">
-              {children}
-            </main>
-          </div>
-        </div>
-      )}
+    <div className="flex h-screen w-full overflow-hidden bg-background">
+      {/* Sidebar - only show on desktop */}
+      {!isMobile && <Sidebar />}
+
+      {/* Main content area */}
+      <div className="flex flex-col flex-1 w-full overflow-hidden">
+        <Header title={title} />
+        
+        <main className={`flex-1 overflow-auto p-4 pb-safe ${isMobile ? 'pb-20' : 'pb-6'}`}>
+          {children}
+        </main>
+
+        {/* Mobile navigation - only show on mobile */}
+        {isMobile && <MobileNavigation />}
+      </div>
     </div>
   );
 };

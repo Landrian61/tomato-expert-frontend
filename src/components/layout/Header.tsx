@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { Sun, Moon, LogOut, User } from "lucide-react";
 import { useAppContext } from "@/context/AppContext";
 import { useAuth } from "@/context/AuthContext";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,7 +20,6 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ title }) => {
   const { theme, toggleTheme } = useAppContext();
   const { user, logout } = useAuth();
-  const isMobile = useIsMobile();
 
   // Generate user initials for avatar fallback
   const getInitials = () => {

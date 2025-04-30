@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useEnvironmentalData } from "@/hooks/environmentalDataHook";
 import { toast } from "sonner";
+import CRITrendChartCard from "@/components/dashboard/CRITrendChartCard";
 
 const Dashboard = () => {
   const {
@@ -29,7 +30,7 @@ const Dashboard = () => {
   };
 
   return (
-    <Layout title="Field Overview">
+    <Layout title="Dashboard">
       <div className="space-y-6 pb-4">
         {error ? (
           <Card className="bg-destructive/10 border-destructive/30">
@@ -112,7 +113,11 @@ const Dashboard = () => {
               ) : (
                 <>
                   <RiskGauge value={criValue || 0} />
-                  <CRITrendChart period="week" showTrend={true} />
+                  <CRITrendChartCard
+                    period="week"
+                    showTrend={true}
+                    title="Blight Risk Trend"
+                  />
                 </>
               )}
             </div>

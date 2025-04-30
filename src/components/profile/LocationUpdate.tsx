@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,18 +12,44 @@ import {
 import { MapPin, RefreshCw } from "lucide-react";
 import { updateUserLocation } from "@/services/environmentalDataService";
 import { toast } from "sonner";
+import { api } from "@/services/authService"; // Changed from '@/services/api' to correct import
 
 interface LocationUpdateProps {
   onLocationUpdated?: () => void;
+  refreshProfile?: () => void;
 }
 
 const LocationUpdate: React.FC<LocationUpdateProps> = ({
-  onLocationUpdated
+  onLocationUpdated,
+  refreshProfile
 }) => {
   const [latitude, setLatitude] = useState<string>("");
   const [longitude, setLongitude] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+
+  // Get user's current location from profile on component mount
+  useEffect(() => {
+    const fetchUserLocation = async () => {
+      try {
+        const response = await api.get("/user");
+        const defaultLocation = response.data.defaultLocation;
+
+        if (
+          defaultLocation &&
+          defaultLocation.latitude &&
+          defaultLocation.longitude
+        ) {
+          setLatitude(defaultLocation.latitude.toString());
+          setLongitude(defaultLocation.longitude.toString());
+        }
+      } catch (error) {
+        console.error("Error fetching user location:", error);
+      }
+    };
+
+    fetchUserLocation();
+  }, []);
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -65,16 +91,44 @@ const LocationUpdate: React.FC<LocationUpdateProps> = ({
         throw new Error("Latitude and longitude must be valid numbers");
       }
 
-      await updateUserLocation({
-        latitude: parsedLatitude,
-        longitude: parsedLongitude
-      });
+      // Try multiple ways to update location to ensure it works
+      try {
+        // 1. First method: Try using the environmental service
+        await updateUserLocation({
+          latitude: parsedLatitude,
+          longitude: parsedLongitude
+        });
+      } catch (primaryError) {
+        console.warn("Primary location update method failed:", primaryError);
+
+        try {
+          // 2. Second method: Try direct user update
+          await api.put("/user/update", {
+            defaultLocation: {
+              latitude: parsedLatitude,
+              longitude: parsedLongitude
+            }
+          });
+        } catch (fallbackError) {
+          console.warn("Second location update method failed:", fallbackError);
+
+          // 3. Last resort: Try the dedicated location endpoint
+          await api.post("/user/location", {
+            latitude: parsedLatitude,
+            longitude: parsedLongitude
+          });
+        }
+      }
 
       toast.success("Farm location updated successfully");
 
-      // Call the callback if provided
+      // Call the callbacks if provided
       if (onLocationUpdated) {
         onLocationUpdated();
+      }
+
+      if (refreshProfile) {
+        refreshProfile();
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to update location");

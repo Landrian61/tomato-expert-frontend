@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { openDB } from 'idb';
+import { api } from './apiService'; // Update to import from central API service
 
 // Base API URL
 // In development, we use the local backend URL
@@ -7,6 +8,15 @@ import { openDB } from 'idb';
 const API_URL = import.meta.env.DEV 
   ? 'http://localhost:5000/api' 
   : 'https://tomato-expert-backend.onrender.com/api';
+
+// Track refresh token attempts to prevent loops
+let isRefreshing = false;
+let refreshAttempts = 0;
+const MAX_REFRESH_ATTEMPTS = 3;
+
+// Add last refresh timestamp to prevent rapid consecutive refreshes
+let lastRefreshTime = 0;
+const MIN_REFRESH_INTERVAL = 10000; // 10 seconds  
 
 // Types
 export interface UserData {
@@ -68,104 +78,48 @@ const clearAuthFromIDB = async () => {
   }
 };
 
-// Configure axios instance with interceptors
-const api = axios.create({
-  baseURL: API_URL,
-  withCredentials: true, // Enable sending cookies in cross-origin requests
-});
-
-// Request interceptor for adding token
-api.interceptors.request.use(
-  async (config) => {
-    // Don't add auth header for refresh token or login/register endpoints
-    if (
-      config.url === '/refresh-token' ||
-      config.url === '/login' ||
-      config.url === '/register' ||
-      config.url === '/verify-email' ||
-      config.url === '/resend-verification'
-    ) {
-      return config;
-    }
-
-    // Try to get token from localStorage first, then IndexedDB
-    let authData = JSON.parse(localStorage.getItem('authData') || 'null');
-    if (!authData) {
-      authData = await getAuthFromIDB();
-    }
-
-    if (authData?.accessToken) {
-      config.headers.Authorization = `Bearer ${authData.accessToken}`;
-    }
-
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Response interceptor for token refresh
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
-
-    // Only attempt token refresh if we get a 401 error (Unauthorized) 
-    // and we haven't already tried refreshing for this request
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
-      try {
-        console.log('Attempting to refresh token...');
-        const refreshResponse = await axios.post(
-          `${API_URL}/refresh-token`, 
-          {}, 
-          { withCredentials: true }
-        );
-        
-        if (refreshResponse.data.accessToken) {
-          // Update token in localStorage and IndexedDB
-          const authData = JSON.parse(localStorage.getItem('authData') || 'null') || await getAuthFromIDB();
-          if (authData) {
-            authData.accessToken = refreshResponse.data.accessToken;
-            localStorage.setItem('authData', JSON.stringify(authData));
-            await saveAuthToIDB(authData);
-          }
-          
-          // Update token in the original request and retry
-          originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.accessToken}`;
-          return api(originalRequest);
-        }
-      } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError);
-        
-        // If refresh fails due to invalid refresh token (403),
-        // proceed with limited functionality - don't force logout
-        if (refreshError.response?.status !== 403) {
-          // For other errors, logout the user
-          await logout();
-          // Allow the app to continue in a limited state
-          // Only redirect to login for serious auth issues
-          if (window.location.pathname.includes('/dashboard')) {
-            window.location.href = '/login';
-          }
-        }
-      }
-    }
-
-    // If the error is 403 on the refresh token endpoint, 
-    // continue without forcing a logout
-    if (error.config?.url === '/refresh-token' && error.response?.status === 403) {
-      console.warn('Refresh token expired or invalid. Limited functionality available.');
-      return Promise.reject(error);
-    }
-
-    return Promise.reject(error);
-  }
-);
+// Check if we're on the login or register page
+const isAuthPage = () => {
+  const path = window.location.pathname;
+  return path.includes('/login') || 
+         path.includes('/register') || 
+         path.includes('/forgot-password') ||
+         path.includes('/verify');
+};
 
 // Updated refreshToken function
 const refreshToken = async () => {
+
+  // Skip token refresh on auth pages
+  if (isAuthPage()) {
+    return { accessToken: null, skipRefresh: true };
+  }
+  
+  // Check if refresh is already in progress
+  if (isRefreshing) {
+    console.log('Token refresh already in progress, skipping');
+    return { accessToken: null, skipRefresh: true };
+  }
+  
+  // Check if we've exceeded max refresh attempts
+  if (refreshAttempts >= MAX_REFRESH_ATTEMPTS) {
+    console.warn('Maximum refresh attempts exceeded, forcing logout');
+    await logout();
+    return { accessToken: null, forceLogout: true };
+  }
+
+  // Prevent refreshing too frequently
+  const now = Date.now();
+  if (now - lastRefreshTime < MIN_REFRESH_INTERVAL) {
+    console.log('Refresh attempted too soon after previous refresh, skipping');
+    return { accessToken: null, skipRefresh: true };
+  }
+  
   try {
+    isRefreshing = true;
+    refreshAttempts++;
+    lastRefreshTime = now;
+
     // Use a direct axios call instead of the api instance to avoid interceptor loops
     const response = await axios.post(
       `${API_URL}/refresh-token`, 
@@ -174,6 +128,9 @@ const refreshToken = async () => {
     );
     
     if (response.data.accessToken) {
+      // Reset attempts counter on success
+      refreshAttempts = 0;
+      
       // Update access token in storage
       const authData = JSON.parse(localStorage.getItem('authData') || 'null') || await getAuthFromIDB();
       
@@ -182,7 +139,6 @@ const refreshToken = async () => {
         // Also update user info if provided by the server
         if (response.data.user) {
           authData.user = response.data.user;
-          // Update remember me preference if present
           if (typeof response.data.user.rememberMe === 'boolean') {
             authData.rememberMe = response.data.user.rememberMe;
           }
@@ -206,8 +162,6 @@ const refreshToken = async () => {
       // When offline, try to extend token life locally for PWA functionality
       const authData = JSON.parse(localStorage.getItem('authData') || 'null') || await getAuthFromIDB();
       if (authData?.accessToken) {
-        // Instead of failing, return the current token when offline
-        // This allows the PWA to continue functioning in offline mode
         return { 
           accessToken: authData.accessToken,
           user: authData.user,
@@ -215,13 +169,20 @@ const refreshToken = async () => {
         };
       }
     }
+
+    if (refreshAttempts >= MAX_REFRESH_ATTEMPTS) {
+      // Force logout after maximum attempts
+      await logout();
+      return { accessToken: null, forceLogout: true };
+    }
     
-    // For 403 errors (forbidden/expired), we'll return null token but not force logout
     // For other errors, also return null but log the specific error
     return { 
       accessToken: null,
       offlineMode: !navigator.onLine 
     };
+  } finally {
+    isRefreshing = false;
   }
 };
 
@@ -259,6 +220,10 @@ const login = async (credentials: {
   rememberMe?: boolean 
 }) => {
   try {
+    // Reset refresh tracking on new login
+    refreshAttempts = 0;
+    isRefreshing = false;
+    
     const response = await api.post<AuthResponse>('/login', credentials);
     
     if (response.data.accessToken) {
@@ -280,6 +245,10 @@ const login = async (credentials: {
 };
 
 const logout = async () => {
+  // Reset refresh tracking
+  refreshAttempts = 0;
+  isRefreshing = false;
+  
   try {
     await api.post('/logout');
   } catch (error) {
@@ -288,6 +257,11 @@ const logout = async () => {
     // Clear auth data even if API call fails
     localStorage.removeItem('authData');
     await clearAuthFromIDB();
+    
+    // Redirect to login page if not already there
+    if (!window.location.pathname.includes('/login')) {
+      window.location.href = '/login';
+    }
   }
 };
 
