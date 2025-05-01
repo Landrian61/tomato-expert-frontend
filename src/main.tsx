@@ -40,3 +40,34 @@ serviceWorkerRegistration.register({
     toast.success("You are back online");
   }
 });
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js').then(registration => {
+      registration.addEventListener('updatefound', () => {
+        if (registration.installing) {
+          const newWorker = registration.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              // Show update notification
+              const notification = document.createElement('div');
+              notification.className = 'fixed bottom-4 right-4 bg-white p-4 rounded shadow-lg z-50';
+              notification.innerHTML = `
+                <p class="font-medium">App update available!</p>
+                <p class="text-sm text-gray-600 mb-2">Refresh to get the latest version</p>
+                <button id="update-app" class="bg-green-600 text-white px-4 py-1 rounded text-sm">
+                  Update
+                </button>
+              `;
+              document.body.appendChild(notification);
+              
+              document.getElementById('update-app')?.addEventListener('click', () => {
+                window.location.reload();
+              });
+            }
+          });
+        }
+      });
+    });
+  });
+}
