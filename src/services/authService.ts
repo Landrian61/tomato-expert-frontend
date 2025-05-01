@@ -4,10 +4,11 @@ import { api } from './apiService'; // Update to import from central API service
 
 // Base API URL
 // In development, we use the local backend URL
-// In production, we use the deployed URL
-const API_URL = import.meta.env.DEV 
-  ? 'http://localhost:5000/api' 
-  : 'https://tomato-expert-backend.onrender.com/api';
+// Determine which URL to use based on environment
+const isDevelopment = import.meta.env.MODE === 'development';
+const API_BASE_URL = isDevelopment 
+  ? import.meta.env.VITE_API_URL_DEVELOPMENT 
+  : import.meta.env.VITE_API_URL_PRODUCTION;
 
 // Track refresh token attempts to prevent loops
 let isRefreshing = false;
@@ -122,7 +123,7 @@ const refreshToken = async () => {
 
     // Use a direct axios call instead of the api instance to avoid interceptor loops
     const response = await axios.post(
-      `${API_URL}/refresh-token`, 
+      `${API_BASE_URL}/refresh-token`, 
       {}, 
       { withCredentials: true }
     );
@@ -189,7 +190,7 @@ const refreshToken = async () => {
 // Auth Service Functions
 const register = async (userData: { firstName: string; lastName: string; email: string; password: string }) => {
   try {
-    const response = await api.post('/register', userData);
+    const response = await api.post('/api/register', userData);
     return response.data;
   } catch (error) {
     throw error;
@@ -198,7 +199,7 @@ const register = async (userData: { firstName: string; lastName: string; email: 
 
 const verifyEmail = async (email: string, code: string) => {
   try {
-    const response = await api.post('/verify-email', { email, code });
+    const response = await api.post('/api/verify-email', { email, code });
     return response.data;
   } catch (error) {
     throw error;
@@ -207,7 +208,7 @@ const verifyEmail = async (email: string, code: string) => {
 
 const resendVerification = async (email: string) => {
   try {
-    const response = await api.post('/resend-verification', { email });
+    const response = await api.post('/api/resend-verification', { email });
     return response.data;
   } catch (error) {
     throw error;
@@ -224,7 +225,7 @@ const login = async (credentials: {
     refreshAttempts = 0;
     isRefreshing = false;
     
-    const response = await api.post<AuthResponse>('/login', credentials);
+    const response = await api.post<AuthResponse>('/api/login', credentials);
     
     if (response.data.accessToken) {
       const authData = {
@@ -250,7 +251,7 @@ const logout = async () => {
   isRefreshing = false;
   
   try {
-    await api.post('/logout');
+    await api.post('/api/logout');
   } catch (error) {
     console.error('Error during logout:', error);
   } finally {
@@ -284,28 +285,20 @@ const getCurrentUser = async () => {
 
 const getUserProfile = async () => {
   try {
-    const response = await api.get('/user');
+    const response = await api.get('/api/user');
     return response.data;
   } catch (error) {
+    console.error('Error getting user profile:', error);
     throw error;
   }
 };
 
 const updateUserPhoto = async (imageData: string) => {
   try {
-    const response = await api.put('/user/photo', { image: imageData });
-    
-    // Update profile photo in storage
-    const authData = JSON.parse(localStorage.getItem('authData') || 'null') || await getAuthFromIDB();
-    
-    if (authData && response.data.profilePhoto) {
-      authData.user.profilePhoto = response.data.profilePhoto;
-      localStorage.setItem('authData', JSON.stringify(authData));
-      await saveAuthToIDB(authData);
-    }
-    
+    const response = await api.put('/api/user/photo', { image: imageData });
     return response.data;
   } catch (error) {
+    console.error('Error updating user photo:', error);
     throw error;
   }
 };
@@ -324,7 +317,7 @@ const isAuthenticated = async () => {
 
 const forgotPassword = async (email: string) => {
   try {
-    const response = await api.post('/forgot-password', { email });
+    const response = await api.post('/api/forgot-password', { email });
     return response.data;
   } catch (error) {
     throw error;
@@ -333,7 +326,7 @@ const forgotPassword = async (email: string) => {
 
 const verifyResetToken = async (email: string, code: string) => {
   try {
-    const response = await api.post('/verify-reset-token', { email, code });
+    const response = await api.post('/api/verify-reset-token', { email, code });
     return response.data;
   } catch (error) {
     throw error;
@@ -342,7 +335,7 @@ const verifyResetToken = async (email: string, code: string) => {
 
 const resetPassword = async (email: string, code: string, newPassword: string) => {
   try {
-    const response = await api.post('/reset-password', { email, code, newPassword });
+    const response = await api.post('/api/reset-password', { email, code, newPassword });
     return response.data;
   } catch (error) {
     throw error;
@@ -351,7 +344,7 @@ const resetPassword = async (email: string, code: string, newPassword: string) =
 
 const deleteAccount = async (password: string) => {
   try {
-    const response = await api.post('/user/delete-account', { password });
+    const response = await api.post('/api/user/delete-account', { password });
     
     // Clear auth data upon successful deletion
     localStorage.removeItem('authData');

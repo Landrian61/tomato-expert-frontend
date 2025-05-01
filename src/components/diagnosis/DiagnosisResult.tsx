@@ -131,8 +131,6 @@ const DiagnosisResult: React.FC<DiagnosisResultProps> = ({
                     ></div>
                   </div>
                 </div>
-
-                {/* REMOVED ENVIRONMENTAL DATA SECTION */}
               </div>
             </div>
           </TabsContent>
@@ -156,29 +154,6 @@ const DiagnosisResult: React.FC<DiagnosisResultProps> = ({
                       </>
                     )}
                   </div>
-                </div>
-                <div className="absolute top-2 right-2 flex gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="flex items-center gap-1"
-                  >
-                    <Eye className="h-4 w-4" /> Show Healthy Tissue
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className={`flex items-center gap-1 ${
-                      isHealthy
-                        ? "bg-plant text-white hover:bg-plant/90"
-                        : "bg-tomato text-white hover:bg-tomato/90"
-                    }`}
-                  >
-                    <Search className="h-4 w-4" />
-                    {isHealthy
-                      ? "Highlight Healthy Areas"
-                      : "Highlight Infected Areas"}
-                  </Button>
                 </div>
               </div>
 
@@ -206,8 +181,6 @@ const DiagnosisResult: React.FC<DiagnosisResultProps> = ({
                     </div>
                   </CardContent>
                 </Card>
-
-                {/* REMOVED ENVIRONMENTAL DATA CARD */}
               </div>
 
               {result.signsAndSymptoms && ( // ADD THIS SECTION
@@ -223,12 +196,6 @@ const DiagnosisResult: React.FC<DiagnosisResultProps> = ({
             </div>
           </TabsContent>
         </Tabs>
-
-        <div className="flex justify-end mt-4">
-          <Button variant="outline" onClick={handleViewHistory}>
-            View Diagnosis History
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );

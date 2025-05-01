@@ -42,22 +42,15 @@ const CRITrendChart: React.FC<CRITrendChartProps> = ({
   const fetchCRIHistory = async () => {
     setLoading(true);
     try {
-      const now = new Date();
-      const endDate = now.toISOString().split("T")[0];
+      const startDate = new Date();
+      const endDate = new Date();
+      startDate.setDate(startDate.getDate() - 7); // Get last 7 days
 
-      let startDate;
-      if (period === "week") {
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        startDate = sevenDaysAgo.toISOString().split("T")[0];
-      } else {
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        startDate = thirtyDaysAgo.toISOString().split("T")[0];
-      }
-
-      const response = await api.get("/environmental/cri-history", {
-        params: { startDate, endDate }
+      const response = await api.get("/api/environmental/cri-history", {
+        params: {
+          startDate: startDate.toISOString().split("T")[0],
+          endDate: endDate.toISOString().split("T")[0]
+        }
       });
 
       const processedData = response.data.history.map((item: any) => ({

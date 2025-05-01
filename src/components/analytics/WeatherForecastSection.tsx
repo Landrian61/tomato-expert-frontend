@@ -49,55 +49,18 @@ const WeatherForecastSection: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchForecast();
+    fetchWeatherForecast();
   }, []);
 
-  const fetchForecast = async () => {
-    setLoading(true);
+  const fetchWeatherForecast = async () => {
     try {
-      // Call the backend API to get forecast data
-      const response = await api.get("/environmental/forecast");
-  
-      if (response.data && response.data.forecast && response.data.forecast.length > 0) {
-        // Process data to ensure correct formatting
-        const formattedForecast = response.data.forecast.map(day => ({
-          ...day,
-          // Ensure temperature values have proper formatting
-          temperature: {
-            min: typeof day.temperature.min === 'number' ? day.temperature.min : parseFloat(day.temperature.min),
-            max: typeof day.temperature.max === 'number' ? day.temperature.max : parseFloat(day.temperature.max),
-            avg: typeof day.temperature.avg === 'number' ? day.temperature.avg : parseFloat(day.temperature.avg)
-          },
-          // Ensure humidity is a number
-          humidity: typeof day.humidity === 'number' ? day.humidity : parseFloat(day.humidity),
-          // Ensure rain values are numbers
-          rainChance: typeof day.rainChance === 'number' ? day.rainChance : parseFloat(day.rainChance),
-          rainfall: typeof day.rainfall === 'number' ? day.rainfall : parseFloat(day.rainfall),
-        }));
-        
-        setForecast(formattedForecast);
-        
-        // Show warning if using mock data
-        if (response.data.source === "mock") {
-          toast.warning("Using demo forecast data. Weather API unavailable.");
-        }
-        
-        setError(null);
-      } else {
-        setError("No forecast data available. Please check your farm location settings.");
-        toast.error("Failed to retrieve forecast data");
-      }
-    } catch (error: any) {
+      setLoading(true);
+      // Update the API endpoint to include /api prefix
+      const response = await api.get("/api/environmental/forecast");
+      setForecast(response.data.forecast);
+    } catch (error) {
       console.error("Error fetching forecast:", error);
-      
-      const errorMessage = error.response?.status === 400
-        ? "Your farm location is not set. Please update your profile."
-        : error.response?.status === 503
-        ? "Weather forecast service is temporarily unavailable."
-        : error.response?.data?.message || "Failed to load forecast data";
-        
-      setError(errorMessage);
-      toast.error(errorMessage);
+      setError("Failed to load weather forecast");
     } finally {
       setLoading(false);
     }
@@ -180,7 +143,7 @@ const WeatherForecastSection: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchForecast}
+              onClick={fetchWeatherForecast}
               className="mt-2"
             >
               Retry
@@ -202,7 +165,7 @@ const WeatherForecastSection: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchForecast}
+              onClick={fetchWeatherForecast}
               className="mt-2"
             >
               Refresh
@@ -220,7 +183,7 @@ const WeatherForecastSection: React.FC = () => {
         <Button
           variant="ghost"
           size="sm"
-          onClick={fetchForecast}
+          onClick={fetchWeatherForecast}
           className="flex items-center gap-1 h-7 text-xs"
         >
           <Info className="h-3.5 w-3.5" />

@@ -1,10 +1,12 @@
 import axios from 'axios';
-import { getFCMToken, isFCMSupported } from './firebaseService';
+import { isFCMSupported } from './firebaseService';
+import { api } from './apiService';
 
-// Base API URL - matching the pattern from notificationService.ts
-const API_URL = import.meta.env.DEV 
-  ? 'http://localhost:5000/api' 
-  : 'https://tomato-expert-backend.onrender.com/api';
+// Determine which URL to use based on environment
+const isDevelopment = import.meta.env.MODE === 'development';
+const API_BASE_URL = isDevelopment 
+  ? import.meta.env.VITE_API_URL_DEVELOPMENT 
+  : import.meta.env.VITE_API_URL_PRODUCTION;
 
 // Get auth header with more reliable token retrieval
 const getAuthHeader = () => {
@@ -48,12 +50,25 @@ export const isPushSupported = async (): Promise<boolean> => {
  * Request push notification permission
  * @returns Promise with the permission status
  */
-export const requestNotificationPermission = async (): Promise<NotificationPermission> => {
-  if (!(await isPushSupported())) {
-    throw new Error('Push notifications are not supported in this browser');
+export const requestNotificationPermission = async () => {
+  try {
+    // First check if we already have permission to avoid prompting unnecessarily
+    if (Notification.permission === 'granted') {
+      return true;
+    }
+    
+    if (Notification.permission === 'denied') {
+      console.warn('Notification permission was previously denied');
+      return false;
+    }
+    
+    // Request permission
+    const permission = await Notification.requestPermission();
+    return permission === 'granted';
+  } catch (error) {
+    console.error('Error requesting notification permission:', error);
+    return false;
   }
-  
-  return await Notification.requestPermission();
 };
 
 /**
@@ -103,38 +118,83 @@ export const registerServiceWorker = async () => {
  * Subscribe to push notifications
  * @returns Promise with the FCM token
  */
-export const subscribeToPushNotifications = async (): Promise<string | null> => {
+export const subscribeToPushNotifications = async () => {
   try {
-    console.log('Subscribing to push notifications...');
-    
-    // Register service worker first
-    await registerServiceWorker();
-    
-    // Get FCM token
-    const token = await getFCMToken();
-    console.log('FCM token obtained:', token);
-    
-    if (!token) {
-      console.error('No FCM token available');
-      return null;
+    // Check browser support
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      console.warn('Push notifications not supported in this browser');
+      return false;
     }
     
-    // Send token to the server
-    console.log('Sending FCM token to server...');
-    await axios.post(
-      `${API_URL}/notifications/register-device`,
-      { deviceToken: token },
-      getAuthHeader()
-    );
-    console.log('FCM token sent to server');
+    // Get permission
+    const hasPermission = await requestNotificationPermission();
+    if (!hasPermission) {
+      console.warn('Notification permission not granted');
+      return false;
+    }
     
-    return token;
+    // Get service worker registration
+    const registration = await navigator.serviceWorker.ready;
+    console.log('Service worker ready for push subscription');
+    
+    // Get server's public key
+    const response = await api.get('/notifications/vapid-key');
+    const vapidPublicKey = response.data.publicKey;
+    
+    if (!vapidPublicKey) {
+      console.error('No VAPID public key available');
+      return false;
+    }
+    
+    // Convert the key to a format the browser needs
+    const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+    
+    // Check for existing subscription first
+    const existingSubscription = await registration.pushManager.getSubscription();
+    if (existingSubscription) {
+      console.log('Using existing push subscription');
+      await registerSubscriptionWithServer(existingSubscription);
+      return true;
+    }
+    
+    // Create new subscription
+    console.log('Creating new push subscription');
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: convertedKey
+    });
+    
+    // Register with your server
+    await registerSubscriptionWithServer(subscription);
+    return true;
   } catch (error) {
-    console.error('Error in subscribeToPushNotifications:', error);
-    throw error; // Re-throw the error to be handled by the caller
+    console.error('Failed to subscribe to push notifications:', error);
+    return false;
   }
 };
 
+// Helper function for VAPID key conversion
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+  
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+async function registerSubscriptionWithServer(subscription) {
+  const response = await api.post('/notifications/register-device', {
+    subscription: subscription.toJSON()
+  });
+  return response.data;
+}
 /**
  * Unsubscribe from push notifications
  */
@@ -150,7 +210,7 @@ export const unsubscribeFromPushNotifications = async (): Promise<boolean> => {
     // Notify the server
     try {
       await axios.delete(
-        `${API_URL}/notifications/unregister-device`,
+        `${API_BASE_URL}/notifications/unregister-device`,
         { 
           headers: { 
             ...getAuthHeader().headers 

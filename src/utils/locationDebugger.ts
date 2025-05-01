@@ -30,7 +30,7 @@ export const locationDebugger = {
     
     // Check user profile API
     try {
-      const userResponse = await api.get("/user");
+      const userResponse = await api.get("/api/user");
       if (userResponse.data?.defaultLocation) {
         console.log("✅ Location found in user profile:", userResponse.data.defaultLocation);
       } else {
