@@ -44,7 +44,8 @@ const CRITrendChart: React.FC<CRITrendChartProps> = ({
     try {
       const startDate = new Date();
       const endDate = new Date();
-      startDate.setDate(startDate.getDate() - 7); // Get last 7 days
+      const daysToSubtract = period === "month" ? 30 : 7; // Adjust based on period
+      startDate.setDate(startDate.getDate() - daysToSubtract);
 
       const response = await api.get("/api/environmental/cri-history", {
         params: {
