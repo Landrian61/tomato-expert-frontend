@@ -20,7 +20,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Leaf, CloudRain, Thermometer, Droplets } from "lucide-react";
 import { LatLngExpression, PathOptions } from "leaflet";
-import { FarmLocation } from "@/types/location"; // Import shared type
+import { FarmLocation } from "@/types/location";
+import { useAuth } from "@/context/AuthContext";
+import { useLocation } from "react-router-dom";
 
 // Create a separate map setup component to avoid TypeScript issues
 const MapSetup: React.FC<{ center: LatLngExpression; zoom: number }> = ({
@@ -38,6 +40,10 @@ const MapSetup: React.FC<{ center: LatLngExpression; zoom: number }> = ({
 };
 
 const UgandaBlightMap: React.FC = () => {
+  const { isAuthenticated } = useAuth();
+  const location = useLocation();
+  const isLandingPage = location.pathname === "/";
+
   const [farmLocations, setFarmLocations] = useState<FarmLocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [showMarkers, setShowMarkers] = useState(false);
@@ -65,30 +71,112 @@ const UgandaBlightMap: React.FC = () => {
     const fetchFarmLocations = async () => {
       try {
         setLoading(true);
-        const response = await api.get("/map/farm-locations");
-        setFarmLocations(response.data.locations);
 
-        const totalFarms = response.data.locations.length;
-        const earlyBlightFarms = response.data.locations.filter(
-          (farm: FarmLocation) =>
-            farm.environmentalData?.blightType === "Early Blight"
-        ).length;
-        const lateBlightFarms = response.data.locations.filter(
-          (farm: FarmLocation) =>
-            farm.environmentalData?.blightType === "Late Blight"
-        ).length;
-        const highRiskFarms = response.data.locations.filter(
-          (farm: FarmLocation) =>
-            farm.environmentalData &&
-            ["High", "Critical"].includes(farm.environmentalData.riskLevel)
-        ).length;
+        // Use public endpoint if on landing page or not authenticated
+        const endpoint =
+          isLandingPage || !isAuthenticated
+            ? "/api/map/public-farm-locations" // Add /api prefix
+            : "/api/map/farm-locations"; // Add /api prefix
 
-        setStats({
-          totalFarms,
-          earlyBlightCount: earlyBlightFarms,
-          lateBlightCount: lateBlightFarms,
-          highRiskCount: highRiskFarms
-        });
+        // Handle potential errors for public access
+        try {
+          const response = await api.get(endpoint);
+          setFarmLocations(response.data.locations);
+
+          // Calculate stats from the data
+          const totalFarms = response.data.locations.length;
+          const earlyBlightFarms = response.data.locations.filter(
+            (farm: FarmLocation) =>
+              farm.environmentalData?.blightType === "Early Blight"
+          ).length;
+          const lateBlightFarms = response.data.locations.filter(
+            (farm: FarmLocation) =>
+              farm.environmentalData?.blightType === "Late Blight"
+          ).length;
+          const highRiskFarms = response.data.locations.filter(
+            (farm: FarmLocation) =>
+              farm.environmentalData &&
+              ["High", "Critical"].includes(farm.environmentalData.riskLevel)
+          ).length;
+
+          setStats({
+            totalFarms,
+            earlyBlightCount: earlyBlightFarms,
+            lateBlightCount: lateBlightFarms,
+            highRiskCount: highRiskFarms
+          });
+        } catch (apiError: any) {
+          console.error(`Error fetching from ${endpoint}:`, apiError);
+
+          // If public endpoint fails, try using a sample dataset for the landing page
+          if (isLandingPage || !isAuthenticated) {
+            console.log("Using sample data for public display");
+            // Sample data for demonstration
+            const sampleData = generateSampleFarmLocations();
+            setFarmLocations(sampleData);
+
+            // Calculate stats from sample data
+            const totalFarms = sampleData.length;
+            const earlyBlightFarms = sampleData.filter(
+              (farm) => farm.environmentalData?.blightType === "Early Blight"
+            ).length;
+            const lateBlightFarms = sampleData.filter(
+              (farm) => farm.environmentalData?.blightType === "Late Blight"
+            ).length;
+            const highRiskFarms = sampleData.filter(
+              (farm) =>
+                farm.environmentalData &&
+                ["High", "Critical"].includes(farm.environmentalData.riskLevel)
+            ).length;
+
+            setStats({
+              totalFarms,
+              earlyBlightCount: earlyBlightFarms,
+              lateBlightCount: lateBlightFarms,
+              highRiskCount: highRiskFarms
+            });
+          } else if (
+            apiError.response?.status === 401 ||
+            apiError.response?.status === 403
+          ) {
+            // If authenticated endpoint fails with auth error, try public endpoint
+            try {
+              const publicResponse = await api.get(
+                "/api/map/public-farm-locations"
+              );
+              setFarmLocations(publicResponse.data.locations);
+
+              // Calculate stats from the data
+              const totalFarms = publicResponse.data.locations.length;
+              const earlyBlightFarms = publicResponse.data.locations.filter(
+                (farm: FarmLocation) =>
+                  farm.environmentalData?.blightType === "Early Blight"
+              ).length;
+              const lateBlightFarms = publicResponse.data.locations.filter(
+                (farm: FarmLocation) =>
+                  farm.environmentalData?.blightType === "Late Blight"
+              ).length;
+              const highRiskFarms = publicResponse.data.locations.filter(
+                (farm: FarmLocation) =>
+                  farm.environmentalData &&
+                  ["High", "Critical"].includes(
+                    farm.environmentalData.riskLevel
+                  )
+              ).length;
+
+              setStats({
+                totalFarms,
+                earlyBlightCount: earlyBlightFarms,
+                lateBlightCount: lateBlightFarms,
+                highRiskCount: highRiskFarms
+              });
+            } catch (fallbackError) {
+              throw fallbackError;
+            }
+          } else {
+            throw apiError;
+          }
+        }
       } catch (err: any) {
         console.error("Error fetching farm locations:", err);
         setError(err.message || "Failed to load farm locations");
@@ -98,7 +186,71 @@ const UgandaBlightMap: React.FC = () => {
     };
 
     fetchFarmLocations();
-  }, []);
+  }, [isAuthenticated, isLandingPage]);
+
+  // Helper function to generate sample farm location data for fallback
+  const generateSampleFarmLocations = (): FarmLocation[] => {
+    // Uganda region centers
+    const regions = [
+      { lat: 0.3476, lng: 32.5825, name: "Central" }, // Kampala
+      { lat: 1.7122, lng: 33.6119, name: "Eastern" }, // Soroti
+      { lat: -0.6167, lng: 30.65, name: "Western" }, // Mbarara
+      { lat: 2.7747, lng: 32.2992, name: "Northern" } // Gulu
+    ];
+
+    const farmLocations: FarmLocation[] = [];
+
+    // Generate 20 sample farms across Uganda regions
+    for (let i = 0; i < 20; i++) {
+      const region = regions[i % regions.length];
+      // Add some randomness to location
+      const latitude = region.lat + (Math.random() - 0.5) * 0.5;
+      const longitude = region.lng + (Math.random() - 0.5) * 0.5;
+
+      // Properly typed arrays to match the expected string literal types
+      const riskLevels: Array<"Low" | "Medium" | "High" | "Critical"> = [
+        "Low",
+        "Medium",
+        "High",
+        "Critical"
+      ];
+      const blightTypes: Array<"Healthy" | "Early Blight" | "Late Blight"> = [
+        "Healthy",
+        "Early Blight",
+        "Late Blight"
+      ];
+
+      const riskIndex = Math.floor(Math.random() * riskLevels.length);
+      const blightIndex = Math.floor(Math.random() * blightTypes.length);
+      const cri = 20 + Math.floor(Math.random() * 80); // 20-100
+
+      farmLocations.push({
+        id: `sample-${i}`,
+        farmer: {
+          firstName: `Farmer`,
+          lastName: `${i + 1}`
+        },
+        location: {
+          latitude,
+          longitude,
+          district: region.name,
+          name: `Sample Farm ${i + 1}`
+        },
+        isSelf: false,
+        environmentalData: {
+          cri,
+          riskLevel: riskLevels[riskIndex],
+          blightType: blightTypes[blightIndex],
+          temperature: 20 + Math.floor(Math.random() * 10),
+          humidity: 50 + Math.floor(Math.random() * 40),
+          rainfall: Math.floor(Math.random() * 5 * 10) / 10,
+          soilMoisture: 30 + Math.floor(Math.random() * 50)
+        }
+      });
+    }
+
+    return farmLocations;
+  };
 
   const getMarkerColor = (data: FarmLocation["environmentalData"]) => {
     if (!data) return "#CCCCCC"; // Default gray for missing data
@@ -215,7 +367,9 @@ const UgandaBlightMap: React.FC = () => {
                     pathOptions={markerOptions}
                   >
                     <Tooltip>
-                      {farm.farmer.firstName} {farm.farmer.lastName}
+                      {farm.farmer
+                        ? `${farm.farmer.firstName} ${farm.farmer.lastName}`
+                        : "Farm"}
                       {farm.location.district
                         ? ` - ${farm.location.district}`
                         : ""}
@@ -224,67 +378,85 @@ const UgandaBlightMap: React.FC = () => {
                       {farm.environmentalData?.riskLevel || "Unknown"} Risk)
                     </Tooltip>
                     <Popup>
-                    <div className="p-1">
-                      <h3 className="font-semibold">
-                        {farm.farmer.firstName} {farm.farmer.lastName}
-                      </h3>
-                      <p className="text-sm text-gray-600">
-                        {farm.location.name}, {farm.location.district}
-                      </p>
-                  
-                      {farm.environmentalData ? (
-                        <>
+                      <div className="p-1">
+                        <h3 className="font-semibold">
+                          {farm.farmer
+                            ? `${farm.farmer.firstName} ${farm.farmer.lastName}`
+                            : "Farm Location"}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {farm.location.name || ""},{" "}
+                          {farm.location.district || "Unknown"}
+                        </p>
+
+                        {farm.environmentalData ? (
+                          <>
+                            <div className="mt-2 p-2 rounded bg-gray-50">
+                              <div className="flex items-center justify-between text-sm">
+                                <span
+                                  className={`font-medium ${
+                                    farm.environmentalData.riskLevel ===
+                                      "High" ||
+                                    farm.environmentalData.riskLevel ===
+                                      "Critical"
+                                      ? "text-red-600"
+                                      : "text-amber-600"
+                                  }`}
+                                >
+                                  {farm.environmentalData.blightType}
+                                </span>
+                                <span
+                                  className={`px-2 py-0.5 rounded text-xs ${
+                                    farm.environmentalData.riskLevel ===
+                                    "Critical"
+                                      ? "bg-red-100 text-red-800"
+                                      : farm.environmentalData.riskLevel ===
+                                        "High"
+                                      ? "bg-orange-100 text-orange-800"
+                                      : farm.environmentalData.riskLevel ===
+                                        "Medium"
+                                      ? "bg-amber-100 text-amber-800"
+                                      : "bg-green-100 text-green-800"
+                                  }`}
+                                >
+                                  {farm.environmentalData.riskLevel} Risk (CRI:{" "}
+                                  {farm.environmentalData.cri.toFixed(1)})
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
+                              <div className="flex items-center gap-1">
+                                <Thermometer className="h-3 w-3" />
+                                <span>
+                                  {farm.environmentalData.temperature}°C
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Droplets className="h-3 w-3" />
+                                <span>{farm.environmentalData.humidity}%</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <CloudRain className="h-3 w-3" />
+                                <span>{farm.environmentalData.rainfall}mm</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Droplets className="h-3 w-3" />
+                                <span>
+                                  Soil: {farm.environmentalData.soilMoisture}%
+                                </span>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
                           <div className="mt-2 p-2 rounded bg-gray-50">
-                            <div className="flex items-center justify-between text-sm">
-                              <span className={`font-medium ${
-                                farm.environmentalData.riskLevel === "High" ||
-                                farm.environmentalData.riskLevel === "Critical"
-                                  ? "text-red-600"
-                                  : "text-amber-600"
-                              }`}>
-                                {farm.environmentalData.blightType}
-                              </span>
-                              <span className={`px-2 py-0.5 rounded text-xs ${
-                                farm.environmentalData.riskLevel === "Critical"
-                                  ? "bg-red-100 text-red-800"
-                                  : farm.environmentalData.riskLevel === "High"
-                                  ? "bg-orange-100 text-orange-800"
-                                  : farm.environmentalData.riskLevel === "Medium"
-                                  ? "bg-amber-100 text-amber-800"
-                                  : "bg-green-100 text-green-800"
-                              }`}>
-                                {farm.environmentalData.riskLevel} Risk (CRI:{" "}
-                                {farm.environmentalData.cri.toFixed(1)})
-                              </span>
-                            </div>
+                            <p className="text-sm text-gray-600">
+                              No environmental data available
+                            </p>
                           </div>
-                  
-                          <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                            <div className="flex items-center gap-1">
-                              <Thermometer className="h-3 w-3" />
-                              <span>{farm.environmentalData.temperature}°C</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Droplets className="h-3 w-3" />
-                              <span>{farm.environmentalData.humidity}%</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <CloudRain className="h-3 w-3" />
-                              <span>{farm.environmentalData.rainfall}mm</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Droplets className="h-3 w-3" />
-                              <span>Soil: {farm.environmentalData.soilMoisture}%</span>
-                            </div>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="mt-2 p-2 rounded bg-gray-50">
-                          <p className="text-sm text-gray-600">No environmental data available</p>
-                        </div>
-                      )}
-                    </div>
-                  </Popup>
+                        )}
+                      </div>
+                    </Popup>
                   </CircleMarker>
                 );
               })}

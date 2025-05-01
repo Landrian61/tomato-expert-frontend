@@ -35,6 +35,8 @@ const Sidebar: React.FC = () => {
 
   const handleLogout = async () => {
     await logout();
+    // Explicitly navigate to landing page after logout
+    navigate("/");
   };
 
   return (

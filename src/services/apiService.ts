@@ -11,7 +11,7 @@ console.log('Using API URL:', API_BASE_URL);
 
 // Create an axios instance with common configuration
 export const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: 'http://localhost:5000',  // Remove '/api' from here if it exists
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',

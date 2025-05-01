@@ -79,7 +79,7 @@ export const validatePlantImage = async (
 
     console.log('Sending image validation request to API');
 
-    const response = await api.post('/diagnosis/validate', {
+    const response = await api.post('/api/diagnosis/validate', {
       image: formattedImageData,
       coordinates
     });
@@ -100,7 +100,7 @@ export const diagnosePlant = async (validationId: string) => {
   try {
     console.log('Sending diagnosis request to API with validation ID:', validationId);
 
-    const response = await api.post('/diagnosis/diagnose', {
+    const response = await api.post('/api/diagnosis/diagnose', {
       validationId
     });
 
@@ -119,7 +119,7 @@ export const diagnosePlant = async (validationId: string) => {
  */
 export const getDiagnosisHistory = async (limit = 10, skip = 0): Promise<DiagnosisHistoryResponse> => {
   try {
-    const response = await api.get(`/diagnosis/history?limit=${limit}&skip=${skip}`);
+    const response = await api.get(`/api/diagnosis/history?limit=${limit}&skip=${skip}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching diagnosis history:', error);
@@ -153,7 +153,7 @@ export const getDiagnosisById = async (id: string): Promise<DiagnosisResult> => 
 
     // The path should match how routes are mounted in the backend
     // Since routes are mounted at '/api/diagnosis', we just need '/diagnosis/:id'
-    const response = await api.get(`/diagnosis/${id}`);
+    const response = await api.get(`/api/diagnosis/${id}`);
 
     // Log the response data structure
     console.log('Response received:', !!response.data);
