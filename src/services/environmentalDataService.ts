@@ -54,9 +54,9 @@ export interface LocationUpdate {
 export const getLatestEnvironmentalData = async (): Promise<EnvironmentalData> => {
   // Define possible API paths to try
   const possiblePaths = [
-    '/environmental/latest',
-    '/environmental-data/latest',
-    '/weather/latest'
+    '/api/environmental/latest',
+    '/api/environmental-data/latest',
+    '/api/weather/latest'
   ];
 
   let lastError: any = null;
@@ -153,9 +153,9 @@ const getMockEnvironmentalData = (): EnvironmentalData => {
 export const getCRIHistory = async (period: 'day' | 'week' | 'month' | 'year'): Promise<CRIHistoryData> => {
   // Define possible API paths to try
   const possiblePaths = [
-    `/environmental/cri-history`,
-    `/environmental-data/cri-history`,
-    `/weather/cri-history`
+    `/api/environmental/cri-history`,
+    `/api/environmental-data/cri-history`,
+    `/api/weather/cri-history`
   ];
 
   let lastError: any = null;
@@ -226,10 +226,10 @@ export const getCRIHistory = async (period: 'day' | 'week' | 'month' | 'year'): 
 export const updateUserLocation = async (location: LocationUpdate) => {
   // Define possible API paths to try
   const possiblePaths = [
-    '/environmental/location',          // Changed from update-location
-    '/user/location',                   // Added user location endpoint
-    '/environmental-data/location',     // Changed from update-location
-    '/weather/location'                 // Changed from update-location
+    '/api/environmental/location',
+    '/api/user/location',
+    '/api/environmental-data/location',
+    '/api/weather/location'
   ];
 
   let lastError: any = null;
@@ -271,9 +271,9 @@ export const updateUserLocation = async (location: LocationUpdate) => {
 export const refreshEnvironmentalData = async () => {
   // Define possible API paths to try
   const possiblePaths = [
-    '/environmental/refresh',
-    '/environmental-data/refresh',
-    '/weather/refresh'
+    '/api/environmental/refresh',
+    '/api/environmental-data/refresh',
+    '/api/weather/refresh'
   ];
 
   let lastError: any = null;

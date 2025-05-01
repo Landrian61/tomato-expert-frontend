@@ -22,7 +22,6 @@ import ChangePassword from "./pages/ChangePassword";
 import ProtectedRoute from "@/components/common/ProtectedRoute";
 import Analytics from "@/pages/Analytics";
 import { useEffect } from "react";
-import { testApiEndpoint } from "./utils/apiDebugger";
 import "./utils/debugLocationService"; // Import for side effects
 import "@/utils/locationDebugger"; // Import for side effects
 
@@ -51,6 +50,7 @@ const App = () => {
                 <Toaster />
                 <Sonner />
                 <Routes>
+                  {/* Public routes that don't require authentication check */}
                   <Route path="/" element={<Landing />} />
                   <Route path="/login" element={<Login />} />
                   <Route path="/register" element={<Register />} />

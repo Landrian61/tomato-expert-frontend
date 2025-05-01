@@ -14,25 +14,41 @@ type Config = {
 };
 
 export function register(config?: Config) {
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      // Determine if we're in development mode
-      const isDev = window.location.hostname === 'localhost' || 
-                    window.location.hostname.includes('127.0.0.1');
-                    
-      // For Vite projects with PWA plugin, the SW registration works differently
-      const swUrl = isDev ? '/dev-sw.js?dev-sw' : '/service-worker.js';
-      
-      if (isLocalhost) {
-        // This is running on localhost
-        checkValidServiceWorker(swUrl, config);
-      } else {
-        // Is not localhost. Just register service worker
-        registerValidSW(swUrl, config);
+   if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+      try {
+        const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        console.log('Service worker registered successfully:', registration);
+        
+        if (config && config.onSuccess) {
+          config.onSuccess(registration);
+        }
+        
+        registration.addEventListener('updatefound', () => {
+          const installingWorker = registration.installing;
+          if (!installingWorker) return;
+          
+          installingWorker.addEventListener('statechange', () => {
+            if (installingWorker.state === 'installed') {
+              if (navigator.serviceWorker.controller) {
+                // New content available
+                console.log('New content is available; please refresh.');
+                if (config && config.onUpdate) {
+                  config.onUpdate(registration);
+                }
+              } else {
+                // Content cached for offline use
+                console.log('Content is cached for offline use.');
+                if (config && config.onSuccess) {
+                  config.onSuccess(registration);
+                }
+              }
+            }
+          });
+        });
+      } catch (error) {
+        console.error('Error during service worker registration:', error);
       }
-      
-      // Set up online/offline handlers
-      setupOnlineOfflineHandlers(config);
     });
   }
 }

@@ -41,9 +41,11 @@ export interface AppPermissions {
 }
 
 // Base API URL - matching the pattern from authService.ts
-const API_URL = import.meta.env.DEV 
-  ? 'http://localhost:5000/api' 
-  : 'https://tomato-expert-backend.onrender.com/api';
+// Determine which URL to use based on environment
+const isDevelopment = import.meta.env.MODE === 'development';
+const API_BASE_URL = isDevelopment 
+  ? import.meta.env.VITE_API_URL_DEVELOPMENT 
+  : import.meta.env.VITE_API_URL_PRODUCTION;
 
 const getAuthHeader = () => {
   try {
@@ -98,7 +100,7 @@ export const getNotifications = async (
     }
     
     const response = await axios.get(
-      `${API_URL}/notifications${queryParams}`,
+      `${API_BASE_URL}/notifications${queryParams}`,
       getAuthHeader()
     );
     
@@ -113,7 +115,7 @@ export const getNotifications = async (
 export const markNotificationAsRead = async (notificationId: string): Promise<{ message: string; notification: Notification }> => {
   try {
     const response = await axios.put(
-      `${API_URL}/notifications/${notificationId}/read`,
+      `${API_BASE_URL}/notifications/${notificationId}/read`,
       {},
       getAuthHeader()
     );
@@ -129,7 +131,7 @@ export const markNotificationAsRead = async (notificationId: string): Promise<{ 
 export const markAllNotificationsAsRead = async (): Promise<{ message: string }> => {
   try {
     const response = await axios.put(
-      `${API_URL}/notifications/read-all`,
+      `${API_BASE_URL}/notifications/read-all`,
       {},
       getAuthHeader()
     );
@@ -145,7 +147,7 @@ export const markAllNotificationsAsRead = async (): Promise<{ message: string }>
 export const registerDeviceToken = async (deviceToken: string): Promise<{ message: string }> => {
   try {
     const response = await axios.post(
-      `${API_URL}/notifications/register-device`,
+      `${API_BASE_URL}/notifications/register-device`,
       { deviceToken },
       getAuthHeader()
     );
@@ -163,7 +165,7 @@ export const updateNotificationSettings = async (
 ): Promise<{ message: string; settings: NotificationSettings }> => {
   try {
     const response = await axios.put(
-      `${API_URL}/notifications/settings`,
+      `${API_BASE_URL}/notifications/settings`,
       settings,
       getAuthHeader()
     );
@@ -184,10 +186,10 @@ export const requestTestTip = async (): Promise<{ message: string }> => {
       throw new Error('Authentication token is missing. Please log in again.');
     }
     
-    console.log('Sending test tip request to:', `${API_URL}/notifications/test-tip`);
+    console.log('Sending test tip request to:', `${API_BASE_URL}/notifications/test-tip`);
     
     const response = await axios.post(
-      `${API_URL}/notifications/test-tip`,
+      `${API_BASE_URL}/notifications/test-tip`,
       {},
       getAuthHeader()
     );
@@ -218,7 +220,7 @@ export const requestTestTip = async (): Promise<{ message: string }> => {
 
 export async function getNotificationSettings(): Promise<NotificationSettings> {
   try {
-    const response = await axios.get(`${API_URL}/user/notification-settings`, getAuthHeader());
+    const response = await axios.get(`${API_BASE_URL}/user/notification-settings`, getAuthHeader());
     return response.data;
   } catch (error) {
     console.error('Error fetching notification settings:', error);
@@ -236,7 +238,7 @@ export async function getNotificationSettings(): Promise<NotificationSettings> {
 
 export async function getAppPermissions(): Promise<AppPermissions> {
   try {
-    const response = await axios.get(`${API_URL}/user/permissions`, getAuthHeader());
+    const response = await axios.get(`${API_BASE_URL}/user/permissions`, getAuthHeader());
     return response.data;
   } catch (error) {
     console.error('Error fetching app permissions:', error);
@@ -254,7 +256,7 @@ export async function getAppPermissions(): Promise<AppPermissions> {
 
 export async function updateAppPermissions(permissions: Partial<AppPermissions>): Promise<void> {
   try {
-    await axios.put(`${API_URL}/user/permissions`, permissions, getAuthHeader());
+    await axios.put(`${API_BASE_URL}/user/permissions`, permissions, getAuthHeader());
   } catch (error) {
     console.error('Error updating app permissions:', error);
     throw error;

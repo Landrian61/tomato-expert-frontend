@@ -48,10 +48,17 @@ const Profile = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const userData = await getUserProfile();
-        setFirstName(userData.firstName || "");
-        setLastName(userData.lastName || "");
-        setEmail(userData.email || "");
+        const profile = await getUserProfile();
+        // Update the user context instead of calling setUserProfile
+        if (setUser) {
+          setUser({
+            ...user,
+            ...profile
+          });
+        }
+        setFirstName(profile.firstName || "");
+        setLastName(profile.lastName || "");
+        setEmail(profile.email || "");
       } catch (error) {
         console.error("Failed to fetch user profile:", error);
         toast.error("Failed to load profile data");
@@ -65,7 +72,7 @@ const Profile = () => {
     }
 
     fetchUserProfile();
-  }, [user]);
+  }, [user, setUser]);
 
   const handleProfilePhotoChange = async (
     e: React.ChangeEvent<HTMLInputElement>

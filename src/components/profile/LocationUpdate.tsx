@@ -32,7 +32,7 @@ const LocationUpdate: React.FC<LocationUpdateProps> = ({
   useEffect(() => {
     const fetchUserLocation = async () => {
       try {
-        const response = await api.get("/user");
+        const response = await api.get("/api/user");
         const defaultLocation = response.data.defaultLocation;
 
         if (
@@ -91,47 +91,24 @@ const LocationUpdate: React.FC<LocationUpdateProps> = ({
         throw new Error("Latitude and longitude must be valid numbers");
       }
 
-      // Try multiple ways to update location to ensure it works
-      try {
-        // 1. First method: Try using the environmental service
-        await updateUserLocation({
-          latitude: parsedLatitude,
-          longitude: parsedLongitude
-        });
-      } catch (primaryError) {
-        console.warn("Primary location update method failed:", primaryError);
+      const locationData = {
+        latitude: parsedLatitude,
+        longitude: parsedLongitude
+      };
 
-        try {
-          // 2. Second method: Try direct user update
-          await api.put("/user/update", {
-            defaultLocation: {
-              latitude: parsedLatitude,
-              longitude: parsedLongitude
-            }
-          });
-        } catch (fallbackError) {
-          console.warn("Second location update method failed:", fallbackError);
-
-          // 3. Last resort: Try the dedicated location endpoint
-          await api.post("/user/location", {
-            latitude: parsedLatitude,
-            longitude: parsedLongitude
-          });
-        }
-      }
-
-      toast.success("Farm location updated successfully");
+      await updateUserLocation(locationData);
 
       // Call the callbacks if provided
       if (onLocationUpdated) {
         onLocationUpdated();
       }
 
-      if (refreshProfile) {
-        refreshProfile();
-      }
+      toast.success("Location updated successfully!");
     } catch (error: any) {
-      toast.error(error.message || "Failed to update location");
+      console.error("Failed to update location:", error);
+      toast.error(
+        error.message || "Failed to update location. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
