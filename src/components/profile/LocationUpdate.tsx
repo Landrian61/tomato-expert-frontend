@@ -32,7 +32,7 @@ const LocationUpdate: React.FC<LocationUpdateProps> = ({
   useEffect(() => {
     const fetchUserLocation = async () => {
       try {
-        const response = await api.get("/api/user");
+        const response = await api.get("/user");
         const defaultLocation = response.data.defaultLocation;
 
         if (

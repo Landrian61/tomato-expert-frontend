@@ -47,7 +47,7 @@ const CRITrendChart: React.FC<CRITrendChartProps> = ({
       const daysToSubtract = period === "month" ? 30 : 7; // Adjust based on period
       startDate.setDate(startDate.getDate() - daysToSubtract);
 
-      const response = await api.get("/api/environmental/cri-history", {
+      const response = await api.get("/environmental/cri-history", {
         params: {
           startDate: startDate.toISOString().split("T")[0],
           endDate: endDate.toISOString().split("T")[0]

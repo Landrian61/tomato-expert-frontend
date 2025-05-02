@@ -190,7 +190,7 @@ const refreshToken = async () => {
 // Auth Service Functions
 const register = async (userData: { firstName: string; lastName: string; email: string; password: string }) => {
   try {
-    const response = await api.post('/api/register', userData);
+    const response = await api.post('/register', userData);
     return response.data;
   } catch (error) {
     throw error;
@@ -199,7 +199,7 @@ const register = async (userData: { firstName: string; lastName: string; email: 
 
 const verifyEmail = async (email: string, code: string) => {
   try {
-    const response = await api.post('/api/verify-email', { email, code });
+    const response = await api.post('/verify-email', { email, code });
     return response.data;
   } catch (error) {
     throw error;
@@ -208,7 +208,7 @@ const verifyEmail = async (email: string, code: string) => {
 
 const resendVerification = async (email: string) => {
   try {
-    const response = await api.post('/api/resend-verification', { email });
+    const response = await api.post('/resend-verification', { email });
     return response.data;
   } catch (error) {
     throw error;
@@ -225,7 +225,7 @@ const login = async (credentials: {
     refreshAttempts = 0;
     isRefreshing = false;
     
-    const response = await api.post<AuthResponse>('/api/login', credentials);
+    const response = await api.post<AuthResponse>('/login', credentials);
     
     if (response.data.accessToken) {
       const authData = {
@@ -251,7 +251,7 @@ const logout = async () => {
   isRefreshing = false;
   
   try {
-    await api.post('/api/logout');
+    await api.post('/logout');
   } catch (error) {
     console.error('Error during logout:', error);
   } finally {
@@ -285,7 +285,7 @@ const getCurrentUser = async () => {
 
 const getUserProfile = async () => {
   try {
-    const response = await api.get('/api/user');
+    const response = await api.get('/user');
     return response.data;
   } catch (error) {
     console.error('Error getting user profile:', error);
@@ -295,7 +295,7 @@ const getUserProfile = async () => {
 
 const updateUserPhoto = async (imageData: string) => {
   try {
-    const response = await api.put('/api/user/photo', { image: imageData });
+    const response = await api.put('/user/photo', { image: imageData });
     return response.data;
   } catch (error) {
     console.error('Error updating user photo:', error);
@@ -317,7 +317,7 @@ const isAuthenticated = async () => {
 
 const forgotPassword = async (email: string) => {
   try {
-    const response = await api.post('/api/forgot-password', { email });
+    const response = await api.post('/forgot-password', { email });
     return response.data;
   } catch (error) {
     throw error;
@@ -326,7 +326,7 @@ const forgotPassword = async (email: string) => {
 
 const verifyResetToken = async (email: string, code: string) => {
   try {
-    const response = await api.post('/api/verify-reset-token', { email, code });
+    const response = await api.post('/verify-reset-token', { email, code });
     return response.data;
   } catch (error) {
     throw error;
@@ -335,7 +335,7 @@ const verifyResetToken = async (email: string, code: string) => {
 
 const resetPassword = async (email: string, code: string, newPassword: string) => {
   try {
-    const response = await api.post('/api/reset-password', { email, code, newPassword });
+    const response = await api.post('/reset-password', { email, code, newPassword });
     return response.data;
   } catch (error) {
     throw error;
@@ -344,7 +344,7 @@ const resetPassword = async (email: string, code: string, newPassword: string) =
 
 const deleteAccount = async (password: string) => {
   try {
-    const response = await api.post('/api/user/delete-account', { password });
+    const response = await api.post('/user/delete-account', { password });
     
     // Clear auth data upon successful deletion
     localStorage.removeItem('authData');

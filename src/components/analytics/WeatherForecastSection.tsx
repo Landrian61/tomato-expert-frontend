@@ -56,7 +56,7 @@ const WeatherForecastSection: React.FC = () => {
     try {
       setLoading(true);
       // Update the API endpoint to include /api prefix
-      const response = await api.get("/api/environmental/forecast");
+      const response = await api.get("/environmental/forecast");
       setForecast(response.data.forecast);
     } catch (error) {
       console.error("Error fetching forecast:", error);
