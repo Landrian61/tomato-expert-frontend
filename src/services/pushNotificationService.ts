@@ -139,8 +139,8 @@ export const subscribeToPushNotifications = async () => {
     
     // Get server's public key
     const response = await api.get('/notifications/vapid-key');
-    const vapidPublicKey = response.data.publicKey;
-    
+    let vapidPublicKey = response.data.publicKey;
+
     if (!vapidPublicKey) {
       console.error('No VAPID public key available');
       return false;
