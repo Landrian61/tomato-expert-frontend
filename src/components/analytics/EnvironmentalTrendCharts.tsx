@@ -30,7 +30,7 @@ const EnvironmentalTrendCharts: React.FC = () => {
     setLoading(true);
     try {
       // Use your existing endpoint that works
-      const response = await api.get("/api/environmental/cri-history", {
+      const response = await api.get("/environmental/cri-history", {
         params: { period }
       });
 
