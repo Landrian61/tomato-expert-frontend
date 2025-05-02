@@ -75,8 +75,8 @@ const UgandaBlightMap: React.FC = () => {
         // Use public endpoint if on landing page or not authenticated
         const endpoint =
           isLandingPage || !isAuthenticated
-            ? "/api/map/public-farm-locations" // Add /api prefix
-            : "/api/map/farm-locations"; // Add /api prefix
+            ? "/map/public-farm-locations"
+            : "/map/farm-locations";
 
         // Handle potential errors for public access
         try {
