@@ -142,7 +142,7 @@ const UgandaBlightMap: React.FC = () => {
             // If authenticated endpoint fails with auth error, try public endpoint
             try {
               const publicResponse = await api.get(
-                "/api/map/public-farm-locations"
+                "/map/public-farm-locations"
               );
               setFarmLocations(publicResponse.data.locations);
 
