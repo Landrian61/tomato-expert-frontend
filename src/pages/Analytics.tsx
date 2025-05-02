@@ -155,7 +155,7 @@ const Analytics: React.FC = () => {
 
     try {
       // Fetch latest environmental data
-      const envResponse = await api.get("/api/environmental/latest");
+      const envResponse = await api.get("/environmental/latest");
       if (!envResponse.data) {
         throw new Error("Failed to retrieve environmental data");
       }
