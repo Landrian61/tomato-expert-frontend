@@ -1,4 +1,3 @@
-// src/components/diagnosis/DiagnosisHistory.tsx
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,9 +13,7 @@ import { toast } from "sonner";
 
 const DiagnosisHistory = () => {
   const [loading, setLoading] = useState(true);
-  const [diagnosisHistory, setDiagnosisHistory] = useState<DiagnosisResult[]>(
-    []
-  );
+  const [diagnosisHistory, setDiagnosisHistory] = useState<DiagnosisResult[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const limit = 5;
@@ -69,9 +66,9 @@ const DiagnosisHistory = () => {
           .fill(0)
           .map((_, index) => (
             <Card key={index} className="mb-4">
-              <CardContent className="p-6">
-                <div className="flex gap-4">
-                  <Skeleton className="w-20 h-20 rounded-md" />
+              <CardContent className="p-4">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Skeleton className="w-16 h-16 sm:w-20 sm:h-20 rounded-md" />
                   <div className="flex-1">
                     <Skeleton className="h-5 w-1/3 mb-2" />
                     <Skeleton className="h-4 w-2/3 mb-2" />
@@ -83,7 +80,7 @@ const DiagnosisHistory = () => {
           ))
       ) : diagnosisHistory.length === 0 ? (
         <Card>
-          <CardContent className="p-6 text-center">
+          <CardContent className="p-4 text-center">
             <p className="text-muted-foreground">No diagnosis history found</p>
             <Button
               variant="outline"
@@ -98,8 +95,49 @@ const DiagnosisHistory = () => {
         <>
           {diagnosisHistory.map((diagnosis) => (
             <Card key={diagnosis.id} className="mb-4">
-              <CardContent className="p-4">
-                <div className="flex gap-4">
+              <CardContent className="p-3 sm:p-4">
+                {/* Mobile layout (stacked) */}
+                <div className="block sm:hidden">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="w-16 h-16 shrink-0 rounded-md overflow-hidden">
+                      <img
+                        src={diagnosis.thumbnailUrl || diagnosis.imageUrl}
+                        alt={diagnosis.condition}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    {getConditionBadge(diagnosis.condition)}
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-medium text-sm">{diagnosis.condition}</h3>
+                    <div className="flex items-center text-xs text-muted-foreground mt-1">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      {new Date(diagnosis.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-2 flex justify-between items-center">
+                    <div className="flex items-center">
+                      <AlertTriangle className="h-3 w-3 text-warning-light mr-1" />
+                      <span className="text-xs">
+                        Confidence: {diagnosis.confidence}%
+                      </span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs px-2 py-1 h-auto"
+                      onClick={() => handleViewDetails(diagnosis.id)}
+                    >
+                      Details
+                      <ChevronRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Desktop layout (side-by-side) */}
+                <div className="hidden sm:flex sm:gap-4">
                   <div className="w-20 h-20 shrink-0 rounded-md overflow-hidden">
                     <img
                       src={diagnosis.thumbnailUrl || diagnosis.imageUrl}

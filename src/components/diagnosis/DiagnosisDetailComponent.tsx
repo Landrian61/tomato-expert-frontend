@@ -1,277 +1,140 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import React from 'react';
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  ArrowLeft,
-  Calendar,
-  AlertTriangle,
-  Thermometer,
-  Droplets,
-  CloudRain,
-  Sprout
-} from "lucide-react";
-import {
-  getDiagnosisById,
-  DiagnosisResult,
-  formatRecommendation
-} from "@/services/diagnosisService"; // Import formatRecommendation
-import { toast } from "sonner";
+import { CalendarIcon, AlertTriangle, ExternalLink, Loader2 } from "lucide-react";
 
-const DiagnosisDetailComponent = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+const DiagnosisDetailComponent = ({ diagnosis }) => {
+ if (!diagnosis) {
+   return (
+     <div className="space-y-6 pb-6">
+       <Card>
+         <CardContent className="p-4 flex justify-center items-center h-40 flex-col gap-4">
+           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+           <p className="text-muted-foreground">
+             Loading diagnosis information...
+           </p>
+         </CardContent>
+       </Card>
+     </div>
+   );
+ }
 
-  useEffect(() => {
-    // Debug to see what ID is being received from useParams
-    console.log("ID from useParams:", id);
+ const getConditionColor = (condition) => {
+   if (condition.toLowerCase().includes("healthy"))
+     return "bg-plant text-white";
+   if (condition.toLowerCase().includes("early blight"))
+     return "bg-warning-dark text-white";
+   if (condition.toLowerCase().includes("late blight"))
+     return "bg-tomato text-white";
+   return "bg-gray-500 text-white";
+ };
 
-    // More thorough ID validation
-    if (id && id !== "undefined" && /^[0-9a-fA-F]{24}$/.test(id)) {
-      fetchDiagnosisDetails(id);
-    } else {
-      setLoading(false);
-      const errorMsg = !id
-        ? "No diagnosis ID provided"
-        : id === "undefined"
-        ? "Undefined diagnosis ID"
-        : "Invalid diagnosis ID format";
-      console.error(errorMsg);
-      setError(errorMsg);
-      toast.error(errorMsg);
-    }
-  }, [id]);
-
-  const fetchDiagnosisDetails = async (diagnosisId: string) => {
-    setLoading(true);
-    try {
-      const result = await getDiagnosisById(diagnosisId);
-      setDiagnosis(result);
-    } catch (error: any) {
-      console.error("Failed to fetch diagnosis details:", error);
-      setError(error.message || "Failed to load diagnosis details");
-      toast.error("Failed to load diagnosis details");
-    } finally {
-      setLoading(false);
-    }
+  const formatRecommendations = (text) => {
+    if (!text) return [];
+    
+    // Convert paragraph text to bullet points
+    return text.split(/\.\s+/)
+      .filter(point => point.trim().length > 0)
+      .map(point => point.trim() + (point.endsWith('.') ? '' : '.'));
   };
 
-  const getConditionBadge = (condition: string) => {
-    if (!condition) return <Badge>Unknown</Badge>;
-
-    if (condition.toLowerCase().includes("healthy")) {
-      return <Badge className="bg-plant">Healthy</Badge>;
-    } else if (condition.toLowerCase().includes("early blight")) {
-      return <Badge className="bg-warning-dark">Early Blight</Badge>;
-    } else if (condition.toLowerCase().includes("late blight")) {
-      return <Badge className="bg-tomato">Late Blight</Badge>;
-    } else {
-      return <Badge>{condition}</Badge>;
-    }
+  const getLocalResources = () => {
+    return [
+      {
+        name: "Ministry of Agriculture, Uganda",
+        url: "https://www.maaif.go.ug/",
+        description: "Official government agricultural resources"
+      },
+      {
+        name: "National Agricultural Research Organization",
+        url: "https://www.naro.go.ug/",
+        description: "Research and best practices for crop diseases"
+      },
+      {
+        name: "Uganda Extension Services Hotline",
+        phone: "0800-327-329",
+        description: "Call for immediate assistance with plant diseases"
+      }
+    ];
   };
-
-  if (loading) {
-    return (
-      <div className="space-y-4">
-        <Button variant="ghost" className="mb-4" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-
-        <Skeleton className="h-8 w-1/3 mb-6" />
-
-        <Card>
-          <CardContent className="p-0">
-            <Skeleton className="w-full aspect-video" />
-          </CardContent>
-        </Card>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !diagnosis) {
-    return (
-      <div className="space-y-4">
-        <Button variant="ghost" className="mb-4" onClick={() => navigate(-1)}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back
-        </Button>
-
-        <Card>
-          <CardContent className="p-6 text-center">
-            <p className="text-muted-foreground">
-              {error || "Diagnosis not found"}
-            </p>
-            <Button
-              variant="outline"
-              onClick={() => navigate("/diagnosis")}
-              className="mt-4"
-            >
-              Start New Diagnosis
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
-    <div className="space-y-6">
-      <Button variant="ghost" className="mb-4" onClick={() => navigate(-1)}>
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Back
-      </Button>
-
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">{diagnosis.condition}</h1>
-        {getConditionBadge(diagnosis.condition)}
+    <div className="space-y-6 pb-6">
+      {/* Header Section */}
+      <div className="flex flex-col gap-2">
+        <div className={`px-4 py-3 rounded-md ${getConditionColor(diagnosis.condition)}`}>
+          <h2 className="text-xl font-semibold mb-1">{diagnosis.condition}</h2>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4" />
+            <span>Confidence: {diagnosis.confidence}%</span>
+          </div>
+        </div>
+        
+        <div className="flex items-center text-sm text-muted-foreground">
+          <CalendarIcon className="h-4 w-4 mr-1" />
+          <span>{new Date(diagnosis.createdAt).toLocaleString()}</span>
+        </div>
       </div>
 
-      <div className="flex items-center text-sm text-muted-foreground">
-        <Calendar className="h-4 w-4 mr-1" />
-        {new Date(diagnosis.createdAt).toLocaleString()}
-      </div>
-
+      {/* Image and Symptoms */}
       <Card>
-        <CardContent className="p-0 relative">
-          <img
-            src={diagnosis.imageUrl}
-            alt={diagnosis.condition}
-            className="w-full object-cover max-h-[400px]"
-          />
-          <div className="absolute top-2 right-2">
-            <Badge className="bg-black/70">
-              {diagnosis.confidence}% Confidence
-            </Badge>
+        <CardContent className="p-4 space-y-4">
+          <div className="aspect-square w-full max-h-[300px] rounded-md overflow-hidden bg-muted">
+            <img 
+              src={diagnosis.imageUrl} 
+              alt={diagnosis.condition} 
+              className="w-full h-full object-cover"
+            />
+          </div>
+          
+          <div>
+            <h3 className="text-lg font-medium text-primary mb-2">Symptoms Observed</h3>
+            <p className="text-muted-foreground">{diagnosis.signs_and_symptoms}</p>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Diagnosis</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <h3 className="font-medium mb-2">Condition</h3>
-              <p>{diagnosis.condition}</p>
-            </div>
-
-            <div>
-              <h3 className="font-medium mb-2">Recommendation</h3>
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: formatRecommendation(diagnosis.recommendation)
-                }}
-              />{" "}
-              {/* Use formatRecommendation */}
-            </div>
-
-            {diagnosis.signsAndSymptoms && ( // ADD THIS SECTION
-              <div>
-                <h3 className="font-medium mb-2">
-                  Observed Signs and Symptoms
-                </h3>
-                <p>{diagnosis.signsAndSymptoms}</p>
+      {/* Recommendations */}
+      <Card>
+        <CardContent className="p-4">
+          <h3 className="text-lg font-medium text-primary mb-3">Recommendations</h3>
+          <div className="space-y-2">
+            {formatRecommendations(diagnosis.recommendation).map((rec, idx) => (
+              <div key={idx} className="flex gap-2">
+                <span className="font-medium text-primary">{idx + 1}.</span>
+                <p>{rec}</p>
               </div>
-            )}
-          </CardContent>
-        </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Environmental Data</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {diagnosis.environmentalData ? (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-start gap-2">
-                  <Thermometer className="h-5 w-5 text-tomato shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="text-sm font-medium">Temperature</h3>
-                    <p>{diagnosis.environmentalData.temperature}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <Droplets className="h-5 w-5 text-blue-500 shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="text-sm font-medium">Humidity</h3>
-                    <p>{diagnosis.environmentalData.humidity}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <CloudRain className="h-5 w-5 text-blue-400 shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="text-sm font-medium">Rainfall</h3>
-                    <p>{diagnosis.environmentalData.rainfall}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-2">
-                  <Sprout className="h-5 w-5 text-plant shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="text-sm font-medium">Soil Moisture</h3>
-                    <p>{diagnosis.environmentalData.soilMoisture}</p>
-                  </div>
-                </div>
-
-                <div className="col-span-2 mt-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">CRI</span>
-                    <Badge
-                      variant="outline"
-                      className={
-                        diagnosis.environmentalData.riskLevel.toLowerCase() ===
-                        "low"
-                          ? "text-plant"
-                          : diagnosis.environmentalData.riskLevel.toLowerCase() ===
-                            "medium"
-                          ? "text-warning-light"
-                          : diagnosis.environmentalData.riskLevel.toLowerCase() ===
-                            "high"
-                          ? "text-warning-dark"
-                          : "text-tomato"
-                      }
-                    >
-                      {diagnosis.environmentalData.cri.toFixed(1)} -{" "}
-                      {diagnosis.environmentalData.riskLevel} Risk
-                    </Badge>
-                  </div>
-                </div>
+      {/* Resources */}
+      <Card>
+        <CardContent className="p-4">
+          <h3 className="text-lg font-medium text-primary mb-3">Local Resources</h3>
+          <div className="space-y-3">
+            {getLocalResources().map((resource, idx) => (
+              <div key={idx} className="flex flex-col">
+                {resource.url ? (
+                  <a 
+                    href={resource.url} 
+                    target="_blank"
+                    rel="noopener noreferrer" 
+                    className="flex items-center text-primary hover:underline"
+                  >
+                    <ExternalLink className="h-4 w-4 mr-1" />
+                    {resource.name}
+                  </a>
+                ) : (
+                  <div className="font-medium">{resource.name}: {resource.phone}</div>
+                )}
+                <p className="text-sm text-muted-foreground">{resource.description}</p>
               </div>
-            ) : (
-              <div className="flex items-center justify-center h-32">
-                <p className="text-muted-foreground">
-                  No environmental data available
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="flex justify-center">
-        <Button
-          onClick={() => navigate("/diagnosis")}
-          className="bg-plant hover:bg-plant-dark"
-        >
-          <AlertTriangle className="h-4 w-4 mr-2" />
-          Start New Diagnosis
-        </Button>
-      </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

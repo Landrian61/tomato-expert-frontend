@@ -141,57 +141,6 @@ const Dashboard = () => {
                 Refresh Data
               </Button>
             </div>
-
-            {/* Risk level banner */}
-            {riskLevel && (
-              <Card
-                className={`
-                ${riskLevel === "Low" ? "bg-plant/10 border-plant/30" : ""}
-                ${
-                  riskLevel === "Medium"
-                    ? "bg-warning-light/10 border-warning-light/30"
-                    : ""
-                }
-                ${
-                  riskLevel === "High"
-                    ? "bg-warning-dark/10 border-warning-dark/30"
-                    : ""
-                }
-                ${
-                  riskLevel === "Critical"
-                    ? "bg-tomato/10 border-tomato/30"
-                    : ""
-                }
-              `}
-              >
-                <CardContent className="p-4 flex gap-2">
-                  <AlertTriangle
-                    className={`
-                    h-5 w-5 shrink-0 mt-0.5
-                    ${riskLevel === "Low" ? "text-plant" : ""}
-                    ${riskLevel === "Medium" ? "text-warning-light" : ""}
-                    ${riskLevel === "High" ? "text-warning-dark" : ""}
-                    ${riskLevel === "Critical" ? "text-tomato" : ""}
-                  `}
-                  />
-                  <div>
-                    <p className="font-medium">
-                      {riskLevel} Risk Level Detected
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {riskLevel === "Low" &&
-                        "Conditions are favorable for tomato growth. Continue monitoring."}
-                      {riskLevel === "Medium" &&
-                        "Moderate risk of disease. Consider preventative measures."}
-                      {riskLevel === "High" &&
-                        "High risk of disease. Immediate action recommended."}
-                      {riskLevel === "Critical" &&
-                        "Critical risk! Immediate intervention required to prevent crop loss."}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
           </>
         )}
       </div>
