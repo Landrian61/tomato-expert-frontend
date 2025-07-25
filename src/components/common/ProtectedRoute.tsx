@@ -8,11 +8,8 @@ import { WifiOff } from "lucide-react";
 const ProtectedRoute: React.FC = () => {
   const { isAuthenticated, loading, isOffline } = useAuth();
 
-  // Development mode bypass for testing dashboard components
-  const isDevelopment = import.meta.env.MODE === 'development';
-  
   // Show loading state while checking authentication
-  if (loading && !isDevelopment) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-full max-w-md space-y-4 p-4">
@@ -28,8 +25,8 @@ const ProtectedRoute: React.FC = () => {
     );
   }
 
-  // If not authenticated, redirect to login (except in development mode)
-  if (!isAuthenticated && !isDevelopment) {
+  // If not authenticated, redirect to login
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 

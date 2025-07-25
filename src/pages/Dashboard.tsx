@@ -5,6 +5,11 @@ import RiskGauge from "@/components/dashboard/RiskGauge";
 import ActionButton from "@/components/dashboard/ActionButton";
 import CRITrendChart from "@/components/dashboard/CRITrendChart";
 import RecentDiagnosesWidget from "@/components/dashboard/RecentDiagnosesWidget";
+import WeatherForecastWidget from "@/components/dashboard/WeatherForecastWidget";
+import QuickActionsPanel from "@/components/dashboard/QuickActionsPanel";
+import AlertsNotificationCenter from "@/components/dashboard/AlertsNotificationCenter";
+import FarmSummaryCard from "@/components/dashboard/FarmSummaryCard";
+import RecommendationPanel from "@/components/dashboard/RecommendationPanel";
 import { Sprout, AlertTriangle, LineChart, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,6 +53,16 @@ const Dashboard = () => {
           </Card>
         ) : (
           <>
+            {/* Farm Summary and Quick Actions */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              <div className="lg:col-span-2">
+                <FarmSummaryCard />
+              </div>
+              <div>
+                <QuickActionsPanel />
+              </div>
+            </div>
+
             {/* Environmental Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {loading ? (
@@ -120,6 +135,17 @@ const Dashboard = () => {
                   />
                 </>
               )}
+            </div>
+
+            {/* Weather Forecast and Alerts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <WeatherForecastWidget />
+              <AlertsNotificationCenter />
+            </div>
+
+            {/* AI Recommendations */}
+            <div className="grid grid-cols-1">
+              <RecommendationPanel />
             </div>
 
             {/* Recent Diagnoses Widget */}
