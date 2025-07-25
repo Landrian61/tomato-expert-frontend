@@ -71,43 +71,69 @@ export const getLatestEnvironmentalData = async (): Promise<EnvironmentalData> =
     return getMockEnvironmentalData();
   }
 
-  // Try each path until one works
-  for (const path of possiblePaths) {
-    try {
-      if (isDevelopment) console.log(`🔄 Trying to fetch from: ${path}`);
-      const response = await api.get(path, {
-        timeout: 5000, // Add a reasonable timeout
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
+  // Enhanced retry logic with exponential backoff
+  const maxRetries = 3;
+  const baseDelay = 1000; // 1 second
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    // Try each path until one works
+    for (const path of possiblePaths) {
+      try {
+        if (isDevelopment) console.log(`🔄 Attempt ${attempt + 1}: Trying to fetch from: ${path}`);
+        
+        const response = await api.get(path, {
+          timeout: 5000 + (attempt * 2000), // Increase timeout with each retry
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
+        
+        if (isDevelopment) console.log(`✅ Success with path: ${path} on attempt ${attempt + 1}`);
+        
+        // Validate response data
+        if (response.data && response.data.currentConditions && response.data.cri !== undefined) {
+          return response.data;
+        } else {
+          throw new Error('Invalid response data structure');
         }
-      });
-      if (isDevelopment) console.log(`✅ Success with path: ${path}`);
-      return response.data;
-    } catch (error: any) {
-      const errorMsg = error.response ?
-        `Status: ${error.response.status} - ${error.response.statusText}` :
-        error.message;
+      } catch (error: any) {
+        const errorMsg = error.response ?
+          `Status: ${error.response.status} - ${error.response.statusText}` :
+          error.message;
 
-      if (isDevelopment) console.error(`❌ Error with path ${path}: ${errorMsg}`);
+        if (isDevelopment) console.error(`❌ Error with path ${path} (attempt ${attempt + 1}): ${errorMsg}`);
 
-      if (error.response && error.response.status === 401) {
-        console.warn('🔑 Authentication required - user may need to log in');
+        if (error.response && error.response.status === 401) {
+          console.warn('🔑 Authentication required - user may need to log in');
+          // Don't retry on auth errors
+          break;
+        }
+
+        lastError = error;
+        // Continue to next path
       }
+    }
 
-      lastError = error;
-      // Continue to next path
+    // If this wasn't the last attempt, wait before retrying
+    if (attempt < maxRetries - 1) {
+      const delay = baseDelay * Math.pow(2, attempt); // Exponential backoff
+      if (isDevelopment) console.log(`⏳ Waiting ${delay}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
 
   if (isDevelopment) {
-    console.error('❌ All API paths failed. Using fallback data.');
+    console.error('❌ All API paths failed after all retries. Using fallback data.');
     console.error('Last error:', lastError?.message || 'Unknown error');
 
     // Add a button to run the test function if in development
     console.log('%c You can run window.testEnvironmentalApi() to debug connection issues',
       'background: #333; color: white; padding: 4px; border-radius: 4px');
   }
+
+  // Store offline flag to avoid repeated API calls
+  localStorage.setItem('apiFailureTime', Date.now().toString());
 
   return getMockEnvironmentalData();
 };
@@ -265,9 +291,89 @@ export const updateUserLocation = async (location: LocationUpdate) => {
 };
 
 /**
- * Manually triggers a refresh of environmental data
- * @returns The newly refreshed data
+ * Checks API health and connectivity
+ * @returns API health status
  */
+export const checkApiHealth = async (): Promise<{
+  status: 'healthy' | 'degraded' | 'unavailable';
+  latency: number;
+  endpoints: { [key: string]: boolean };
+}> => {
+  const healthCheckPaths = [
+    '/health',
+    '/environmental/latest',
+    '/environmental-data/latest'
+  ];
+
+  const startTime = Date.now();
+  const endpointResults: { [key: string]: boolean } = {};
+  let successfulEndpoints = 0;
+
+  for (const path of healthCheckPaths) {
+    try {
+      await api.get(path, { timeout: 3000 });
+      endpointResults[path] = true;
+      successfulEndpoints++;
+    } catch (error) {
+      endpointResults[path] = false;
+    }
+  }
+
+  const latency = Date.now() - startTime;
+  let status: 'healthy' | 'degraded' | 'unavailable';
+
+  if (successfulEndpoints === healthCheckPaths.length) {
+    status = 'healthy';
+  } else if (successfulEndpoints > 0) {
+    status = 'degraded';
+  } else {
+    status = 'unavailable';
+  }
+
+  return {
+    status,
+    latency,
+    endpoints: endpointResults
+  };
+};
+
+/**
+ * Auto-retry mechanism with circuit breaker pattern
+ */
+class ApiCircuitBreaker {
+  private failures = 0;
+  private lastFailureTime = 0;
+  private readonly maxFailures = 5;
+  private readonly resetTimeout = 30000; // 30 seconds
+
+  isOpen(): boolean {
+    const now = Date.now();
+    if (this.failures >= this.maxFailures) {
+      if (now - this.lastFailureTime > this.resetTimeout) {
+        this.reset();
+        return false;
+      }
+      return true;
+    }
+    return false;
+  }
+
+  recordSuccess(): void {
+    this.reset();
+  }
+
+  recordFailure(): void {
+    this.failures++;
+    this.lastFailureTime = Date.now();
+  }
+
+  private reset(): void {
+    this.failures = 0;
+    this.lastFailureTime = 0;
+  }
+}
+
+const circuitBreaker = new ApiCircuitBreaker();
 export const refreshEnvironmentalData = async () => {
   // Define possible API paths to try
   const possiblePaths = [
