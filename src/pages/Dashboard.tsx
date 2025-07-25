@@ -5,6 +5,9 @@ import RiskGauge from "@/components/dashboard/RiskGauge";
 import ActionButton from "@/components/dashboard/ActionButton";
 import CRITrendChart from "@/components/dashboard/CRITrendChart";
 import RecentDiagnosesWidget from "@/components/dashboard/RecentDiagnosesWidget";
+import FarmStatsWidget from "@/components/dashboard/FarmStatsWidget";
+import WeatherForecastWidget from "@/components/dashboard/WeatherForecastWidget";
+import AlertSummaryWidget from "@/components/dashboard/AlertSummaryWidget";
 import { Sprout, AlertTriangle, LineChart, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,6 +51,12 @@ const Dashboard = () => {
           </Card>
         ) : (
           <>
+            {/* Farm Overview and Alerts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <FarmStatsWidget />
+              <AlertSummaryWidget />
+            </div>
+
             {/* Environmental Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {loading ? (
@@ -95,7 +104,7 @@ const Dashboard = () => {
               )}
             </div>
 
-            {/* Risk Gauge and CRI Trend */}
+            {/* Risk Gauge and Weather Forecast */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {loading ? (
                 <>
@@ -113,20 +122,31 @@ const Dashboard = () => {
               ) : (
                 <>
                   <RiskGauge value={criValue || 0} />
-                  <CRITrendChartCard
-                    period="week"
-                    showTrend={true}
-                    title="Blight Risk Trend"
-                  />
+                  <WeatherForecastWidget />
                 </>
               )}
             </div>
 
+            {/* CRI Trend Chart */}
+            <div className="grid grid-cols-1">
+              {loading ? (
+                <Card>
+                  <CardContent className="p-6">
+                    <Skeleton className="h-64 w-full" />
+                  </CardContent>
+                </Card>
+              ) : (
+                <CRITrendChartCard
+                  period="week"
+                  showTrend={true}
+                  title="Blight Risk Trend Analysis"
+                />
+              )}
+            </div>
+
             {/* Recent Diagnoses Widget */}
-            <div className="grid grid-cols-1 lg:grid-cols-3">
-              <div className="lg:col-span-3">
-                <RecentDiagnosesWidget />
-              </div>
+            <div className="grid grid-cols-1">
+              <RecentDiagnosesWidget />
             </div>
 
             {/* Refresh Button */}
@@ -138,7 +158,7 @@ const Dashboard = () => {
                 disabled={loading}
               >
                 <RefreshCw className="h-4 w-4 mr-1" />
-                Refresh Data
+                Refresh All Data
               </Button>
             </div>
           </>
