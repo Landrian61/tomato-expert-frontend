@@ -5,6 +5,9 @@ import RiskGauge from "@/components/dashboard/RiskGauge";
 import ActionButton from "@/components/dashboard/ActionButton";
 import CRITrendChart from "@/components/dashboard/CRITrendChart";
 import RecentDiagnosesWidget from "@/components/dashboard/RecentDiagnosesWidget";
+import WeatherForecastWidget from "@/components/dashboard/WeatherForecastWidget";
+import QuickActionsWidget from "@/components/dashboard/QuickActionsWidget";
+import AlertSummaryWidget from "@/components/dashboard/AlertSummaryWidget";
 import { Sprout, AlertTriangle, LineChart, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -48,7 +51,7 @@ const Dashboard = () => {
           </Card>
         ) : (
           <>
-            {/* Environmental Cards */}
+            {/* Top Section: Environmental Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {loading ? (
                 <>
@@ -95,37 +98,51 @@ const Dashboard = () => {
               )}
             </div>
 
-            {/* Risk Gauge and CRI Trend */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {loading ? (
-                <>
-                  <Card>
-                    <CardContent className="p-6">
-                      <Skeleton className="h-48 w-full" />
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-6">
-                      <Skeleton className="h-48 w-full" />
-                    </CardContent>
-                  </Card>
-                </>
-              ) : (
-                <>
-                  <RiskGauge value={criValue || 0} />
-                  <CRITrendChartCard
-                    period="week"
-                    showTrend={true}
-                    title="Blight Risk Trend"
-                  />
-                </>
-              )}
-            </div>
+            {/* Main Content Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Left Column - Risk Analysis */}
+              <div className="lg:col-span-2 space-y-6">
+                {/* Risk Gauge and CRI Trend */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {loading ? (
+                    <>
+                      <Card>
+                        <CardContent className="p-6">
+                          <Skeleton className="h-48 w-full" />
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="p-6">
+                          <Skeleton className="h-48 w-full" />
+                        </CardContent>
+                      </Card>
+                    </>
+                  ) : (
+                    <>
+                      <RiskGauge value={criValue || 0} />
+                      <CRITrendChartCard
+                        period="week"
+                        showTrend={true}
+                        title="Blight Risk Trend"
+                      />
+                    </>
+                  )}
+                </div>
 
-            {/* Recent Diagnoses Widget */}
-            <div className="grid grid-cols-1 lg:grid-cols-3">
-              <div className="lg:col-span-3">
+                {/* Weather Forecast */}
+                <WeatherForecastWidget />
+
+                {/* Recent Diagnoses */}
                 <RecentDiagnosesWidget />
+              </div>
+
+              {/* Right Column - Actions and Alerts */}
+              <div className="space-y-6">
+                {/* Quick Actions */}
+                <QuickActionsWidget />
+
+                {/* Alert Summary */}
+                <AlertSummaryWidget />
               </div>
             </div>
 
@@ -137,7 +154,7 @@ const Dashboard = () => {
                 onClick={handleRefresh}
                 disabled={loading}
               >
-                <RefreshCw className="h-4 w-4 mr-1" />
+                <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
                 Refresh Data
               </Button>
             </div>
